@@ -57,7 +57,8 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
   async function handleDelete(id: string) {
     if (!confirm('Supprimer cette commande ?')) return
     setDeletingId(id)
-    setDeleteError(null)
+    // Garantit que le spinner s'affiche avant l'appel réseau
+    await new Promise(r => setTimeout(r, 0))
     const result = await removeCommande(id)
     if (result.error) {
       setDeleteError(result.error)
@@ -67,7 +68,7 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
     setDeletingId(null)
   }
 
-  // Statistiques
+  // Stats
   const active   = commandes.filter(c => c.statut === 'active')
   const totalCA  = active.reduce((sum, c) => sum + c.montant_ar, 0)
   const eligible = new Set(active.map(c => c.member_id)).size
@@ -77,17 +78,17 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
   return (
     <div style={{ maxWidth: 720 }}>
 
-      {/* Stats */}
+      {/* Stats — responsive avec auto-fit */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '1rem',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '0.875rem',
         marginBottom: '1.5rem',
       }}>
         {[
-          { icon: ShoppingCart, label: 'Commandes actives', value: active.length.toString(),         color: 'var(--brand)' },
-          { icon: TrendingUp,   label: 'CA total',           value: formatAr(totalCA),                color: 'var(--accent)' },
-          { icon: Users,        label: 'Éligibles 27 Mai',   value: `${eligible} membres`,            color: '#16a34a' },
+          { icon: ShoppingCart, label: 'Commandes actives', value: active.length.toString(),  color: 'var(--brand)'  },
+          { icon: TrendingUp,   label: 'CA total',           value: formatAr(totalCA),         color: 'var(--accent)' },
+          { icon: Users,        label: 'Éligibles 27 Mai',   value: `${eligible}`,             color: '#16a34a'       },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -97,7 +98,7 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
             <div style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 800,
-              fontSize: 'clamp(1.125rem, 2.5vw, 1.5rem)',
+              fontSize: 'clamp(1rem, 2.5vw, 1.375rem)',
               letterSpacing: '-0.03em',
               color: 'var(--text-1)',
             }}>
@@ -137,6 +138,7 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
               color: showForm ? 'var(--text-2)' : 'white',
               border: 'none', cursor: 'pointer',
               fontSize: '0.8125rem', fontWeight: 600, fontFamily: 'var(--font-body)',
+              transition: 'all 150ms ease',
             }}
           >
             <Plus size={13} />
@@ -190,8 +192,12 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                {/* Montant */}
+              {/* Montant / Date / Statut */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                gap: '0.75rem',
+              }}>
                 <div>
                   <label className="label" htmlFor="cmd-montant">Montant (Ar) *</label>
                   <input
@@ -205,7 +211,6 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                   />
                 </div>
 
-                {/* Date */}
                 <div>
                   <label className="label" htmlFor="cmd-date">Date *</label>
                   <input
@@ -218,7 +223,6 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                   />
                 </div>
 
-                {/* Statut */}
                 <div>
                   <label className="label" htmlFor="cmd-statut">Statut</label>
                   <div style={{ position: 'relative' }}>
@@ -241,6 +245,7 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                 </div>
               </div>
 
+              {/* Submit */}
               <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
@@ -260,12 +265,23 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
                     padding: '0.5rem 1.25rem', borderRadius: '0.5rem',
-                    border: 'none', background: 'var(--brand)', color: 'white',
-                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'var(--font-body)', opacity: isPending ? 0.7 : 1,
+                    border: 'none',
+                    background: isPending ? 'var(--brand-mid)' : 'var(--brand)',
+                    color: 'white',
+                    fontSize: '0.875rem', fontWeight: 600,
+                    cursor: isPending ? 'wait' : 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 150ms ease',
                   }}
                 >
-                  {isPending ? 'Ajout…' : <><CheckCircle2 size={13} /> Enregistrer</>}
+                  {isPending ? (
+                    <>
+                      <span className="animate-spin" style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', display: 'inline-block' }} />
+                      Enregistrement…
+                    </>
+                  ) : (
+                    <><CheckCircle2 size={13} /> Enregistrer</>
+                  )}
                 </button>
               </div>
             </form>
@@ -296,8 +312,8 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                 }}
               >
                 {/* Membre */}
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-1)' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m ? `${m.prenom} ${m.nom ?? ''}` : '—'}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-4)' }}>
@@ -342,14 +358,17 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                   style={{
                     width: 30, height: 30, borderRadius: '0.5rem',
                     border: 'none', background: 'transparent',
-                    color: 'var(--text-4)', cursor: 'pointer',
+                    color: 'var(--text-4)',
+                    cursor: deletingId === c.id ? 'wait' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 150ms ease',
                     flexShrink: 0,
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = '#fee2e2'
-                    ;(e.currentTarget as HTMLElement).style.color = '#dc2626'
+                    if (deletingId !== c.id) {
+                      (e.currentTarget as HTMLElement).style.background = '#fee2e2'
+                      ;(e.currentTarget as HTMLElement).style.color = '#dc2626'
+                    }
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.background = 'transparent'
@@ -357,7 +376,7 @@ export default function CommandeManager({ initialCommandes, members }: Props) {
                   }}
                 >
                   {deletingId === c.id
-                    ? <span className="animate-spin" style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: 'var(--text-4)', display: 'inline-block' }} />
+                    ? <span className="animate-spin" style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#dc2626', display: 'inline-block' }} />
                     : <Trash2 size={13} />
                   }
                 </button>

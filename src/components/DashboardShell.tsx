@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-
-import { LayoutDashboard, UserPlus, Users, Shuffle, LogOut, Menu, X, Trophy, UserCog, ShoppingCart, Calendar, BookOpen, Award } from 'lucide-react'
+import {
+  LayoutDashboard, UserPlus, Users, Shuffle,
+  LogOut, Menu, X, Trophy, UserCog,
+  ShoppingCart, Calendar, BookOpen, Award
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/types'
 
@@ -17,16 +20,15 @@ interface NavItem {
 
 const NAV: Record<Role, NavItem[]> = {
   admin: [
-  { href: '/dashboard',   icon: LayoutDashboard, label: 'Tableau de bord' },
-  { href: '/inscription', icon: UserPlus,         label: 'Inscription'     },
-  { href: '/membres',     icon: Users,            label: 'Membres'         },
-  { href: '/commandes',   icon: ShoppingCart,     label: 'Commandes'       },
-  { href: '/catalogue',   icon: BookOpen,         label: 'Catalogue lots'  },
-  { href: '/recompenses', icon: Award,            label: 'Récompenses'     },
-  { href: '/tirage',      icon: Shuffle,          label: 'Tirage — Soirée' },
-  { href: '/tirage-27',   icon: Calendar,         label: 'Tirage — 27 Mai' },
-  { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },
-],
+    { href: '/dashboard',   icon: LayoutDashboard, label: 'Tableau de bord' },
+    { href: '/inscription', icon: UserPlus,         label: 'Inscription'     },
+    { href: '/membres',     icon: Users,            label: 'Membres'         },
+    { href: '/commandes',   icon: ShoppingCart,     label: 'Commandes'       },
+    { href: '/catalogue',   icon: BookOpen,         label: 'Catalogue lots'  },
+    { href: '/recompenses', icon: Award,            label: 'Récompenses'     },
+    { href: '/tirages',     icon: Shuffle,          label: 'Tirages'         },
+    { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },
+  ],
   animateur: [
     { href: '/inscription', icon: UserPlus, label: 'Inscription' },
     { href: '/membres',     icon: Users,    label: 'Membres'     },
@@ -43,11 +45,10 @@ interface Props {
 }
 
 export default function DashboardShell({ role, userEmail, children }: Props) {
-  const [open, setOpen] = useState(false)
-  const pathname = usePathname()
-  const router = useRouter()
-
-  const navItems = role ? (NAV[role] ?? []) : []
+  const [open, setOpen]   = useState(false)
+  const pathname          = usePathname()
+  const router            = useRouter()
+  const navItems          = role ? (NAV[role] ?? []) : []
 
   useEffect(() => { setOpen(false) }, [pathname])
 
@@ -72,7 +73,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
     }}>
 
       {/* Logo */}
-      <div style={{ padding: '0 0.5rem', marginBottom: '2rem', flexShrink: 0 }}>
+      <div style={{ padding: '0 0.5rem', marginBottom: '0.75rem', flexShrink: 0 }}>
         <Image
           src="/cartin_logo_dark.png"
           alt="Cart'In"
@@ -93,8 +94,24 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
         </div>
       </div>
 
+      {/* Contexte rallye */}
+      <div style={{ padding: '0 0.5rem', marginBottom: '1.25rem', flexShrink: 0 }}>
+        <div style={{
+          fontSize: '0.6875rem',
+          fontWeight: 600,
+          color: 'var(--text-4)',
+          lineHeight: 1.5,
+        }}>
+          Rallye VHR Madagascar 2026<br />
+          15 – 16 – 17 Mai
+        </div>
+      </div>
+
+      {/* Séparateur */}
+      <div className="divider" style={{ marginBottom: '1rem' }} />
+
       {/* Nav */}
-      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = isActive(href)
           return (
@@ -142,7 +159,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
       </nav>
 
       {/* Rôle badge */}
-      <div style={{ padding: '0 0.5rem', marginBottom: '1rem' }}>
+      <div style={{ padding: '0 0.5rem', marginBottom: '1rem', marginTop: '0.5rem' }}>
         <div style={{
           fontSize: '0.6875rem',
           fontWeight: 600,
@@ -236,7 +253,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
       overflow: 'hidden',
     }}>
 
-      {/* ── Sidebar desktop ── */}
+      {/* Sidebar desktop */}
       <aside
         className="hidden lg:flex"
         style={{
@@ -251,7 +268,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
         <Sidebar />
       </aside>
 
-      {/* ── Sidebar mobile (overlay) ── */}
+      {/* Sidebar mobile overlay */}
       {open && (
         <>
           <div
@@ -293,7 +310,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
         </>
       )}
 
-      {/* ── Zone principale ── */}
+      {/* Zone principale */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -339,7 +356,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
           <div style={{ width: 32 }} />
         </header>
 
-        {/* Contenu */}
+        {/* Contenu scrollable */}
         <main style={{
           flex: 1,
           overflowY: 'auto',

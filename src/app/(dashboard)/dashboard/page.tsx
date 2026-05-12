@@ -1,18 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { Users, UserPlus, MapPin, Calendar } from 'lucide-react'
-import Link from 'next/link'
 import { ETAPE_LABELS } from '@/types'
 import type { Etape } from '@/types'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Total membres
   const { count: totalMembers } = await supabase
     .from('members')
     .select('*', { count: 'exact', head: true })
 
-  // Membres par étape
   const { data: allMembers } = await supabase
     .from('members')
     .select('etape, created_at, prenom, nom, email')
@@ -24,36 +22,30 @@ export default async function DashboardPage() {
     countByEtape[e] = (countByEtape[e] ?? 0) + 1
   })
 
-  // Dernières inscriptions (8 max)
   const recent = allMembers?.slice(0, 8) ?? []
 
-  // Aujourd'hui
   const today = new Date().toISOString().split('T')[0]
   const todayCount = allMembers?.filter(m =>
     m.created_at.startsWith(today)
   ).length ?? 0
 
   return (
-    <div className="animate-fade-up">
-      {/* En-tête */}
+    <div>
       <div className="page-header">
-        <div className="overline" style={{ marginBottom: '0.5rem' }}>
-          Rallye VHR Madagascar 2026
-        </div>
         <h1 className="page-title">Tableau de bord</h1>
         <p className="page-subtitle">
           Vue d&apos;ensemble des inscriptions en temps réel.
         </p>
       </div>
 
-      {/* Cartes stats */}
+      {/* Stats */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         gap: '1rem',
         marginBottom: '2rem',
       }}>
-        <div className="stat-card delay-75">
+        <div className="stat-card animate-fade-up">
           <div className="stat-label">Total inscrits</div>
           <div className="stat-value">{totalMembers ?? 0}</div>
           <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
@@ -61,7 +53,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="stat-card delay-150">
+        <div className="stat-card delay-75">
           <div className="stat-label">Aujourd&apos;hui</div>
           <div className="stat-value" style={{ color: 'var(--accent)' }}>
             +{todayCount}
@@ -71,7 +63,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="stat-card delay-225">
+        <div className="stat-card delay-150">
           <div className="stat-label">Étapes couvertes</div>
           <div className="stat-value">
             {Object.keys(countByEtape).length}
@@ -82,13 +74,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Répartition par étape */}
+      {/* Grille répartition + dernières inscriptions */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '1.5rem',
         marginBottom: '2rem',
       }}>
+        {/* Répartition par étape */}
         <div className="card">
           <div style={{
             display: 'flex',
@@ -137,7 +130,6 @@ export default async function DashboardPage() {
                       {count}
                     </span>
                   </div>
-                  {/* Barre de progression */}
                   <div style={{
                     height: 4,
                     background: 'var(--bg-2)',
@@ -166,11 +158,7 @@ export default async function DashboardPage() {
             justifyContent: 'space-between',
             marginBottom: '1.25rem',
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Calendar size={16} style={{ color: 'var(--brand-light)' }} />
               <h3 style={{
                 fontFamily: 'var(--font-display)',
@@ -215,7 +203,6 @@ export default async function DashboardPage() {
                     borderBottom: i < recent.length - 1 ? '1px solid var(--border)' : 'none',
                   }}
                 >
-                  {/* Avatar initiales */}
                   <div style={{
                     width: 34,
                     height: 34,
@@ -272,7 +259,6 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* CTA inscription */}
           <Link
             href="/inscription"
             style={{

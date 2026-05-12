@@ -30,6 +30,19 @@ export const PALIER_CHANCES: Record<Palier, number> = {
   vip:     5,
 }
 
+// Noms d'affichage world-class pour les catégories de lots
+export const CATEGORIE_LABELS: Record<LotCategorie, string> = {
+  petit:     'Découverte',
+  gros:      'Prestige',
+  tres_gros: 'Grand Prix',
+}
+
+export const CATEGORIE_COLORS: Record<LotCategorie, { bg: string; color: string }> = {
+  petit:     { bg: '#f0f7f8', color: '#2c6976' },
+  gros:      { bg: '#fef3c7', color: '#92400e' },
+  tres_gros: { bg: '#ede9fe', color: '#5b21b6' },
+}
+
 export interface Member {
   id: string
   prenom: string
@@ -94,7 +107,6 @@ export interface Commande {
   created_at: string
 }
 
-// Computed types
 export interface MemberWithStats extends Member {
   cumul_ar: number
   palier: Palier
