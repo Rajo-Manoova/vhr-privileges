@@ -11,16 +11,22 @@ function getAdmin() {
   )
 }
 
-export async function getMemberPortal(email: string) {
+export async function getMemberPortal(email: string, pin?: string) {
   const admin = getAdmin()
 
   const { data: member } = await admin
     .from('members')
-    .select('id, prenom, nom, email, etape, created_at')
+    .select('id, prenom, nom, email, etape, pin, created_at')
     .eq('email', email.trim().toLowerCase())
     .single()
 
-  if (!member) return null
+  if (!member) return { error: 'not_found' as const }
+
+  // Vérification PIN : si le membre a un PIN, il est obligatoire
+  if (member.pin) {
+    if (!pin) return { error: 'pin_required' as const }
+    if (pin.trim() !== member.pin) return { error: 'wrong_pin' as const }
+  }
 
   const { data: commandes } = await admin
     .from('commandes')
@@ -41,11 +47,14 @@ export async function getMemberPortal(email: string) {
     .order('claimed_at', { ascending: false })
 
   const activeCommandes = commandes?.filter(c => c.statut === 'active') ?? []
-  const cumul = activeCommandes.reduce((sum, c) => sum + c.montant_ar, 0)
+  const cumul  = activeCommandes.reduce((sum, c) => sum + c.montant_ar, 0)
   const palier = computePalier(cumul)
 
+  // Ne pas exposer le PIN dans la réponse
+  const { pin: _pin, ...memberSafe } = member
+
   return {
-    member,
+    member: memberSafe,
     cumul,
     palier,
     nbCommandes: activeCommandes.length,
