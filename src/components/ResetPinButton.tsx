@@ -14,7 +14,7 @@ export default function ResetPinButton({ memberId, memberName }: { memberId: str
     setLoading(true)
     await new Promise(r => setTimeout(r, 0))
     const result = await resetMemberPin(memberId)
-    if ('tempPin' in result) setTempPin(result.tempPin)
+    if ('tempPin' in result) setTempPin(result.tempPin ?? null)
     setLoading(false)
   }
 
