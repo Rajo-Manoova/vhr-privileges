@@ -1,3 +1,4 @@
+import ResetPinButton from '@/components/ResetPinButton'
 import { createClient } from '@/lib/supabase/server'
 import { Users, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { ETAPE_LABELS } from '@/types'

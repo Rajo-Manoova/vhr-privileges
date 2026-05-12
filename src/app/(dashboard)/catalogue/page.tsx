@@ -26,25 +26,24 @@ export default async function CataloguePage({
   }>
 }) {
   await requireRole(['admin'])
-  const params    = await searchParams
-  const palier    = params.palier ?? 'all'
-  const categorie = params.categorie ?? 'all'
-  const q         = params.q ?? ''
-  const disponible = params.disponible ?? 'all'
-  const sort      = (params.sort ?? 'created_at') as SortField
-  const dir       = params.dir === 'asc' ? 'asc' : 'desc'
-  const page      = Math.max(1, parseInt(params.page ?? '1'))
-  const editId    = params.edit
+  const params     = await searchParams
+  const palier     = params.palier?.trim()     || 'all'
+  const categorie  = params.categorie?.trim()  || 'all'
+  const q          = params.q?.trim()          || ''
+  const disponible = params.disponible?.trim() || 'all'
+  const sort       = (params.sort?.trim()      || 'created_at') as SortField
+  const dir        = params.dir === 'asc' ? 'asc' : 'desc'
+  const page       = Math.max(1, parseInt(params.page ?? '1'))
+  const editId     = params.edit
 
-  const supabase  = await createClient()
+  const supabase = await createClient()
 
-  // Requête avec filtres
   let req = supabase.from('lots').select('*', { count: 'exact' })
-  if (palier !== 'all')    req = req.eq('palier', palier)
-  if (categorie !== 'all') req = req.eq('categorie', categorie)
-  if (disponible === 'oui') req = req.eq('disponible', true)
-  if (disponible === 'non') req = req.eq('disponible', false)
-  if (q.trim()) req = req.ilike('nom', `%${q}%`)
+  if (palier    && palier    !== 'all') req = req.eq('palier',    palier)
+  if (categorie && categorie !== 'all') req = req.eq('categorie', categorie)
+  if (disponible === 'oui')             req = req.eq('disponible', true)
+  if (disponible === 'non')             req = req.eq('disponible', false)
+  if (q)                                req = req.ilike('nom', `%${q}%`)
 
   const validSorts: SortField[] = ['nom', 'palier', 'categorie', 'stock', 'created_at']
   const sortField = validSorts.includes(sort) ? sort : 'created_at'
@@ -56,7 +55,6 @@ export default async function CataloguePage({
 
   const totalPages = Math.ceil((count ?? 0) / PER_PAGE)
 
-  // Lot en édition
   let editLot = null
   if (editId) {
     const { data } = await supabase.from('lots').select('*').eq('id', editId).single()
@@ -65,14 +63,16 @@ export default async function CataloguePage({
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const base: Record<string, string> = {}
-    if (palier !== 'all') base.palier = palier
-    if (categorie !== 'all') base.categorie = categorie
-    if (disponible !== 'all') base.disponible = disponible
-    if (q) base.q = q
-    if (sort !== 'created_at') base.sort = sort
-    if (dir !== 'desc') base.dir = dir
+    if (palier    && palier    !== 'all') base.palier    = palier
+    if (categorie && categorie !== 'all') base.categorie = categorie
+    if (disponible && disponible !== 'all') base.disponible = disponible
+    if (q)    base.q    = q
+    if (sort && sort !== 'created_at') base.sort = sort
+    if (dir  && dir  !== 'desc')       base.dir  = dir
     const merged = { ...base, ...overrides }
-    const clean  = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined && v !== '')) as Record<string, string>
+    const clean  = Object.fromEntries(
+      Object.entries(merged).filter(([, v]) => v !== undefined && v !== '')
+    ) as Record<string, string>
     const qs = new URLSearchParams(clean).toString()
     return `/catalogue${qs ? `?${qs}` : ''}`
   }
@@ -84,7 +84,9 @@ export default async function CataloguePage({
 
   function SortIcon({ field }: { field: string }) {
     if (sort !== field) return <ArrowUpDown size={12} style={{ opacity: 0.4 }} />
-    return dir === 'asc' ? <ArrowUp size={12} style={{ color: 'var(--brand)' }} /> : <ArrowDown size={12} style={{ color: 'var(--brand)' }} />
+    return dir === 'asc'
+      ? <ArrowUp   size={12} style={{ color: 'var(--brand)' }} />
+      : <ArrowDown size={12} style={{ color: 'var(--brand)' }} />
   }
 
   return (
@@ -92,12 +94,12 @@ export default async function CataloguePage({
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="page-title">Catalogue des lots</h1>
-          <p className="page-subtitle">{count ?? 0} lot{(count ?? 0) > 1 ? 's' : ''} au total</p>
+          <p className="page-subtitle">{count ?? 0} lot{(count ?? 0) > 1 ? 's' : ''}</p>
         </div>
         <CatalogueManager />
       </div>
 
-      {/* Formulaire d'édition */}
+      {/* Formulaire édition */}
       {editLot && (
         <div className="card animate-fade-in" style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent)', maxWidth: 640 }}>
           <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)', marginBottom: '1rem' }}>
@@ -109,21 +111,24 @@ export default async function CataloguePage({
 
       {/* Filtres */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '1.5rem' }}>
-        {/* Recherche */}
         <form method="GET" style={{ position: 'relative', maxWidth: 360 }}>
           <Search size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
           <input name="q" type="text" className="input" defaultValue={q} placeholder="Rechercher un lot…" style={{ paddingLeft: '2.5rem' }} />
-          {palier !== 'all'     && <input type="hidden" name="palier"    value={palier}    />}
-          {categorie !== 'all'  && <input type="hidden" name="categorie" value={categorie} />}
+          {palier    !== 'all' && <input type="hidden" name="palier"     value={palier}    />}
+          {categorie !== 'all' && <input type="hidden" name="categorie"  value={categorie} />}
           {disponible !== 'all' && <input type="hidden" name="disponible" value={disponible} />}
         </form>
 
         {/* Tabs palier */}
         <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-          {[{ value: 'all', label: 'Tous' }, ...Object.entries(PALIER_LABELS).map(([v, l]) => ({ value: v, label: l }))].map(({ value, label }) => {
+          {[
+            { value: 'all', label: 'Tous' },
+            ...Object.entries(PALIER_LABELS).map(([v, l]) => ({ value: v, label: l })),
+          ].map(({ value, label }) => {
             const active = palier === value
             return (
-              <Link key={value} href={buildUrl({ palier: value === 'all' ? undefined : value, page: '1' })}
+              <Link key={value}
+                href={buildUrl({ palier: value === 'all' ? undefined : value, page: '1' })}
                 style={{ padding: '0.375rem 0.75rem', borderRadius: 9999, fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', background: active ? 'var(--brand)' : 'white', color: active ? 'white' : 'var(--text-3)', border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`, transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
                 {label}
               </Link>
@@ -131,12 +136,18 @@ export default async function CataloguePage({
           })}
         </div>
 
-        {/* Tabs catégorie + disponibilité */}
+        {/* Catégorie + disponibilité */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {[{ value: 'all', label: 'Toutes catégories' }, { value: 'petit', label: 'Découverte' }, { value: 'gros', label: 'Prestige' }, { value: 'tres_gros', label: 'Grand Prix' }].map(({ value, label }) => {
+          {[
+            { value: 'all',      label: 'Toutes catégories' },
+            { value: 'petit',    label: 'Découverte'        },
+            { value: 'gros',     label: 'Prestige'          },
+            { value: 'tres_gros', label: 'Grand Prix'       },
+          ].map(({ value, label }) => {
             const active = categorie === value
             return (
-              <Link key={value} href={buildUrl({ categorie: value === 'all' ? undefined : value, page: '1' })}
+              <Link key={value}
+                href={buildUrl({ categorie: value === 'all' ? undefined : value, page: '1' })}
                 style={{ padding: '0.25rem 0.625rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', background: active ? 'rgba(15,45,53,0.08)' : 'transparent', color: active ? 'var(--brand)' : 'var(--text-4)', border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`, transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
                 {label}
               </Link>
@@ -145,10 +156,15 @@ export default async function CataloguePage({
 
           <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 0.25rem' }} />
 
-          {[{ value: 'all', label: 'Tous' }, { value: 'oui', label: '✓ Disponibles' }, { value: 'non', label: '✗ Désactivés' }].map(({ value, label }) => {
+          {[
+            { value: 'all', label: 'Tous'           },
+            { value: 'oui', label: '✓ Disponibles'  },
+            { value: 'non', label: '✗ Désactivés'   },
+          ].map(({ value, label }) => {
             const active = disponible === value
             return (
-              <Link key={value} href={buildUrl({ disponible: value === 'all' ? undefined : value, page: '1' })}
+              <Link key={value}
+                href={buildUrl({ disponible: value === 'all' ? undefined : value, page: '1' })}
                 style={{ padding: '0.25rem 0.625rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', background: active ? 'rgba(15,45,53,0.08)' : 'transparent', color: active ? 'var(--brand)' : 'var(--text-4)', border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`, transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
                 {label}
               </Link>
@@ -169,14 +185,14 @@ export default async function CataloguePage({
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
             <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 640 }}>
               {/* Header */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 120px 80px 80px 100px', gap: '0.75rem', padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-1)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 120px 80px 80px 80px', gap: '0.75rem', padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-1)' }}>
                 {([
-                  { label: 'Nom',       field: 'nom'        },
-                  { label: 'Catégorie', field: 'categorie'  },
-                  { label: 'Programme', field: 'palier'     },
-                  { label: 'Stock',     field: 'stock'      },
-                  { label: 'Dispo',     field: null         },
-                  { label: '',          field: null         },
+                  { label: 'Nom',       field: 'nom'       },
+                  { label: 'Catégorie', field: 'categorie' },
+                  { label: 'Programme', field: 'palier'    },
+                  { label: 'Stock',     field: 'stock'     },
+                  { label: 'Dispo',     field: null        },
+                  { label: '',          field: null        },
                 ] as { label: string; field: string | null }[]).map(({ label, field }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center' }}>
                     {field ? (
@@ -191,7 +207,7 @@ export default async function CataloguePage({
               </div>
 
               {/* Rows */}
-              {lots.map((lot: Lot, i: number) => {
+              {(lots as Lot[]).map((lot, i) => {
                 const isEditing = editId === lot.id
                 const cc = lot.categorie === 'tres_gros'
                   ? { bg: '#ede9fe', color: '#5b21b6' }
@@ -200,8 +216,8 @@ export default async function CataloguePage({
                   : { bg: '#f0f7f8', color: '#2c6976' }
 
                 return (
-                  <div key={lot.id} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 120px 80px 80px 100px', gap: '0.75rem', padding: '0.75rem 1.25rem', alignItems: 'center', borderBottom: i < lots.length - 1 ? '1px solid var(--border)' : 'none', background: isEditing ? 'rgba(217,119,6,0.04)' : lot.disponible ? 'white' : 'var(--bg-1)', opacity: lot.disponible ? 1 : 0.7 }}>
-                    {/* Nom */}
+                  <div key={lot.id} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 120px 80px 80px 80px', gap: '0.75rem', padding: '0.75rem 1.25rem', alignItems: 'center', borderBottom: i < lots.length - 1 ? '1px solid var(--border)' : 'none', background: isEditing ? 'rgba(217,119,6,0.04)' : lot.disponible ? 'white' : 'var(--bg-1)', opacity: lot.disponible ? 1 : 0.7 }}>
+
                     <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', textDecoration: lot.disponible ? 'none' : 'line-through' }}>
                         {lot.nom}
@@ -209,27 +225,22 @@ export default async function CataloguePage({
                       {lot.mis_en_avant && <span style={{ marginLeft: '0.375rem', fontSize: '0.7rem', color: 'var(--accent)' }}>★</span>}
                     </div>
 
-                    {/* Catégorie */}
                     <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: cc.bg, color: cc.color, whiteSpace: 'nowrap' }}>
                       {CATEGORIE_LABELS[lot.categorie as LotCategorie]}
                     </span>
 
-                    {/* Palier */}
                     <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                       {PALIER_LABELS[lot.palier as LotPalier]}
                     </span>
 
-                    {/* Stock */}
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9375rem', color: lot.stock === 0 ? '#dc2626' : 'var(--text-1)' }}>
                       {lot.stock}
                     </span>
 
-                    {/* Disponible */}
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: lot.disponible ? '#16a34a' : 'var(--text-4)' }}>
-                      {lot.disponible ? '✓ Oui' : '✗ Non'}
+                      {lot.disponible ? '✓' : '✗'}
                     </span>
 
-                    {/* Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       {isEditing ? (
                         <Link href={buildUrl({ edit: undefined })} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', borderRadius: '0.375rem', fontSize: '0.75rem', fontWeight: 600, background: 'var(--bg-2)', color: 'var(--text-3)', textDecoration: 'none' }}>✕</Link>
