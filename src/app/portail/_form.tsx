@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Search, Trophy, Lock } from 'lucide-react'
+import { Search, Trophy, Lock, Eye, EyeOff } from 'lucide-react'
 
 interface Props {
   error?: 'not_found' | 'pin_required' | 'wrong_pin'
@@ -18,9 +18,10 @@ const ERROR_MESSAGES = {
 }
 
 export default function PortailForm({ error, email: defaultEmail = '', showPin: defaultShowPin = false }: Props) {
-  const [email,   setEmail]   = useState(defaultEmail)
-  const [pin,     setPin]     = useState('')
-  const [showPin, setShowPin] = useState(defaultShowPin || error === 'pin_required' || error === 'wrong_pin')
+  const [email,       setEmail]       = useState(defaultEmail)
+  const [pin,         setPin]         = useState('')
+  const [showPin,     setShowPin]     = useState(defaultShowPin || error === 'pin_required' || error === 'wrong_pin')
+  const [pinVisible,  setPinVisible]  = useState(false)
   const router = useRouter()
 
   function handleSubmit(e: React.FormEvent) {
@@ -39,7 +40,8 @@ export default function PortailForm({ error, email: defaultEmail = '', showPin: 
       padding: '2rem 1.5rem', fontFamily: 'var(--font-body)',
     }}>
       <div style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
-        <Image src="/cartin_logo_dark.png" alt="Cart'In" width={72} height={72} style={{ objectFit: 'contain', margin: '0 auto 1.5rem' }} />
+        <Image src="/cartin_logo_dark.png" alt="Cart'In" width={72} height={72}
+          style={{ objectFit: 'contain', margin: '0 auto 1.5rem' }} />
 
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', background: 'rgba(15,45,53,0.06)', borderRadius: 9999, padding: '0.25rem 0.875rem', marginBottom: '1.25rem' }}>
           <Trophy size={12} style={{ color: 'var(--accent)' }} />
@@ -54,12 +56,14 @@ export default function PortailForm({ error, email: defaultEmail = '', showPin: 
         </p>
 
         {error && (
-          <div className={`alert ${error === 'not_found' ? 'alert-warning' : 'alert-error'} animate-fade-in`} style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
+          <div className={`alert ${error === 'not_found' ? 'alert-warning' : 'alert-error'} animate-fade-in`}
+            style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
             <span>{ERROR_MESSAGES[error]}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+          {/* Email */}
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
             <input
@@ -72,11 +76,13 @@ export default function PortailForm({ error, email: defaultEmail = '', showPin: 
             />
           </div>
 
+          {/* PIN */}
           {showPin ? (
             <div style={{ position: 'relative' }}>
               <Lock size={15} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
               <input
-                type="password" className="input"
+                type={pinVisible ? 'text' : 'password'}
+                className="input"
                 placeholder="• • • •"
                 value={pin}
                 onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
@@ -84,18 +90,21 @@ export default function PortailForm({ error, email: defaultEmail = '', showPin: 
                 inputMode="numeric"
                 autoFocus
                 style={{
-                  paddingLeft: '2.75rem',
+                  paddingLeft: '2.75rem', paddingRight: '3rem',
                   fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: '1.5rem', letterSpacing: '0.4em', textAlign: 'center',
+                  fontSize: pin.length > 0 && !pinVisible ? '1.5rem' : '1.25rem',
+                  letterSpacing: pinVisible ? '0.3em' : '0.5em',
+                  textAlign: 'center',
                 }}
               />
+              <button type="button" onClick={() => setPinVisible(v => !v)}
+                style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', display: 'flex', padding: '0.25rem' }}>
+                {pinVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setShowPin(true)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.625rem', borderRadius: '0.625rem', border: '1.5px dashed var(--border)', background: 'transparent', color: 'var(--text-4)', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-            >
+            <button type="button" onClick={() => setShowPin(true)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.625rem', borderRadius: '0.625rem', border: '1.5px dashed var(--border)', background: 'transparent', color: 'var(--text-4)', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
               <Lock size={12} /> J&apos;ai un PIN
             </button>
           )}

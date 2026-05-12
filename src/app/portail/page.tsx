@@ -95,7 +95,7 @@ export default async function PortailPage({
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem' }}>
           <Image src="/cartin_logo_transparent.png" alt="Cart'In" width={52} height={52} style={{ objectFit: 'contain' }} />
           <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.45)' }}>VHR Privilèges</span>
-          <Link href="/portail" style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontWeight: 500 }}>Changer</Link>
+          <Link href="/portail" style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontWeight: 500 }}>Quitter</Link>
         </div>
 
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '1rem 0 0.5rem' }}>
