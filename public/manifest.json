@@ -1,0 +1,27 @@
+{
+  "name": "VHR Privilèges",
+  "short_name": "VHR Privilèges",
+  "description": "Programme de fidélité exclusif Cart'In — Rallye VHR Madagascar 2026",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#0F2D35",
+  "orientation": "portrait-primary",
+  "categories": ["business", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [],
+  "lang": "fr"
+}
