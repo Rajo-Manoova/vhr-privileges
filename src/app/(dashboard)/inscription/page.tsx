@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { CheckCircle2, ChevronDown, AlertCircle } from 'lucide-react'
 import { ETAPE_LABELS } from '@/types'
 import type { Etape } from '@/types'
+import { logMemberCreated } from '@/app/actions/members'
 
 export default function InscriptionPage() {
   const [prenom,   setPrenom]   = useState('')
@@ -27,14 +28,17 @@ export default function InscriptionPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { error: insertError } = await supabase.from('members').insert({
-      prenom:     prenom.trim(),
-      nom:        nom.trim() || null,
-      email:      email.trim().toLowerCase(),
-      whatsapp:   whatsapp.trim(),
-      etape,
-      created_by: user?.id ?? null,
-    })
+    const { data, error: insertError } = await supabase
+      .from('members')
+      .insert({
+        prenom:     prenom.trim(),
+        nom:        nom.trim() || null,
+        email:      email.trim().toLowerCase(),
+        whatsapp:   whatsapp.trim(),
+        etape,
+        created_by: user?.id ?? null,
+      })
+      .select('id')
 
     if (insertError) {
       if (insertError.code === '23505') {
@@ -48,6 +52,15 @@ export default function InscriptionPage() {
       }
       setLoading(false)
       return
+    }
+
+    // Log audit (fire-and-forget)
+    if (data?.[0]?.id) {
+      logMemberCreated(
+        data[0].id,
+        `${prenom.trim()}${nom.trim() ? ' ' + nom.trim() : ''}`,
+        etape
+      )
     }
 
     setLastName(prenom.trim())
