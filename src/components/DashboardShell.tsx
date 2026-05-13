@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, UserPlus, Users, Shuffle,
   LogOut, Menu, X, Trophy, UserCog,
-  ShoppingCart, Calendar, BookOpen, Award, Shield
+  ShoppingCart, Calendar, BookOpen, Award, Shield, Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/types'
@@ -27,6 +27,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/catalogue',   icon: BookOpen,         label: 'Catalogue lots'  },
     { href: '/recompenses', icon: Award,            label: 'Récompenses'     },
     { href: '/tirages',     icon: Shuffle,          label: 'Tirages'         },
+    { href: '/settings',    icon: Settings,         label: 'Paramètres'      },
     { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },
     { href: '/audit',       icon: Shield,           label: 'Audit'           },
   ],
@@ -97,12 +98,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
 
       {/* Contexte rallye */}
       <div style={{ padding: '0 0.5rem', marginBottom: '1.25rem', flexShrink: 0 }}>
-        <div style={{
-          fontSize: '0.6875rem',
-          fontWeight: 600,
-          color: 'var(--text-4)',
-          lineHeight: 1.5,
-        }}>
+        <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-4)', lineHeight: 1.5 }}>
           Rallye VHR Madagascar 2026<br />
           15 – 16 – 17 Mai
         </div>
@@ -120,39 +116,22 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
               key={href}
               href={href}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.625rem 0.875rem',
-                borderRadius: '0.625rem',
-                fontSize: '0.875rem',
-                fontWeight: active ? 600 : 500,
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.625rem 0.875rem', borderRadius: '0.625rem',
+                fontSize: '0.875rem', fontWeight: active ? 600 : 500,
                 color: active ? 'var(--brand)' : 'var(--text-2)',
                 background: active ? 'rgba(15,45,53,0.07)' : 'transparent',
-                textDecoration: 'none',
-                transition: 'all 150ms ease',
-                position: 'relative',
-                fontFamily: 'var(--font-body)',
+                textDecoration: 'none', transition: 'all 150ms ease',
+                position: 'relative', fontFamily: 'var(--font-body)',
               }}
             >
               {active && (
                 <span style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '20%',
-                  height: '60%',
-                  width: 3,
-                  background: 'var(--brand)',
-                  borderRadius: '0 3px 3px 0',
+                  position: 'absolute', left: 0, top: '20%', height: '60%',
+                  width: 3, background: 'var(--brand)', borderRadius: '0 3px 3px 0',
                 }} />
               )}
-              <Icon
-                size={17}
-                style={{
-                  color: active ? 'var(--brand)' : 'var(--text-4)',
-                  flexShrink: 0,
-                }}
-              />
+              <Icon size={17} style={{ color: active ? 'var(--brand)' : 'var(--text-4)', flexShrink: 0 }} />
               {label}
             </Link>
           )
@@ -161,14 +140,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
 
       {/* Rôle badge */}
       <div style={{ padding: '0 0.5rem', marginBottom: '1rem', marginTop: '0.5rem' }}>
-        <div style={{
-          fontSize: '0.6875rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--text-4)',
-          marginBottom: '0.5rem',
-        }}>
+        <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-4)', marginBottom: '0.5rem' }}>
           Rôle
         </div>
         <span className={
@@ -183,30 +155,12 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
       </div>
 
       {/* User + déconnexion */}
-      <div style={{
-        paddingTop: '1rem',
-        borderTop: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.75rem',
-      }}>
+      <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <div style={{ padding: '0 0.375rem' }}>
-          <div style={{
-            fontSize: '0.6875rem',
-            color: 'var(--text-4)',
-            marginBottom: '0.125rem',
-            fontWeight: 500,
-          }}>
+          <div style={{ fontSize: '0.6875rem', color: 'var(--text-4)', marginBottom: '0.125rem', fontWeight: 500 }}>
             Connecté
           </div>
-          <div style={{
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            color: 'var(--text-2)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
+          <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {userEmail}
           </div>
         </div>
@@ -214,20 +168,11 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
         <button
           onClick={handleLogout}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 0.875rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-3)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            width: '100%',
-            fontFamily: 'var(--font-body)',
-            transition: 'all 150ms ease',
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.5rem 0.875rem', borderRadius: '0.5rem',
+            border: 'none', background: 'transparent', color: 'var(--text-3)',
+            fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
+            width: '100%', fontFamily: 'var(--font-body)', transition: 'all 150ms ease',
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.background = '#fef2f2'
@@ -246,25 +191,12 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
   )
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100dvh',
-      background: 'var(--bg-0)',
-      fontFamily: 'var(--font-body)',
-      overflow: 'hidden',
-    }}>
+    <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-0)', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
 
       {/* Sidebar desktop */}
       <aside
         className="hidden lg:flex"
-        style={{
-          width: '240px',
-          flexShrink: 0,
-          background: 'white',
-          borderRight: '1px solid var(--border)',
-          flexDirection: 'column',
-          overflowY: 'auto',
-        }}
+        style={{ width: '240px', flexShrink: 0, background: 'white', borderRight: '1px solid var(--border)', flexDirection: 'column', overflowY: 'auto' }}
       >
         <Sidebar />
       </aside>
@@ -275,34 +207,15 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
           <div
             className="lg:hidden"
             onClick={() => setOpen(false)}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 40,
-              background: 'rgba(15,45,53,0.45)',
-              backdropFilter: 'blur(4px)',
-            }}
+            style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(15,45,53,0.45)', backdropFilter: 'blur(4px)' }}
           />
           <aside
             className="lg:hidden"
-            style={{
-              position: 'fixed',
-              top: 0, left: 0, bottom: 0,
-              width: '240px',
-              zIndex: 50,
-              background: 'white',
-              borderRight: '1px solid var(--border)',
-              overflowY: 'auto',
-              animation: 'fadeIn 0.2s ease both',
-            }}
+            style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '240px', zIndex: 50, background: 'white', borderRight: '1px solid var(--border)', overflowY: 'auto', animation: 'fadeIn 0.2s ease both' }}
           >
             <button
               onClick={() => setOpen(false)}
-              style={{
-                position: 'absolute', top: '1rem', right: '1rem',
-                background: 'var(--bg-1)', border: 'none',
-                borderRadius: '0.5rem', padding: '0.375rem',
-                cursor: 'pointer', color: 'var(--text-3)',
-                display: 'flex', alignItems: 'center',
-              }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'var(--bg-1)', border: 'none', borderRadius: '0.5rem', padding: '0.375rem', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
             >
               <X size={15} />
             </button>
@@ -312,45 +225,21 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
       )}
 
       {/* Zone principale */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        minWidth: 0,
-      }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
 
         {/* Top bar mobile */}
         <header
           className="flex lg:hidden"
-          style={{
-            height: '56px',
-            background: 'white',
-            borderBottom: '1px solid var(--border)',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 1rem',
-            flexShrink: 0,
-          }}
+          style={{ height: '56px', background: 'white', borderBottom: '1px solid var(--border)', alignItems: 'center', justifyContent: 'space-between', padding: '0 1rem', flexShrink: 0 }}
         >
           <button
             onClick={() => setOpen(true)}
-            style={{
-              background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--text-1)',
-              display: 'flex', alignItems: 'center', padding: '0.25rem',
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-1)', display: 'flex', alignItems: 'center', padding: '0.25rem' }}
           >
             <Menu size={22} />
           </button>
 
-          <span style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 800,
-            fontSize: '1rem',
-            color: 'var(--brand)',
-            letterSpacing: '-0.02em',
-          }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1rem', color: 'var(--brand)', letterSpacing: '-0.02em' }}>
             VHR Privilèges
           </span>
 
@@ -358,11 +247,7 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
         </header>
 
         {/* Contenu scrollable */}
-        <main style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: 'clamp(1.25rem, 3vw, 2rem)',
-        }}>
+        <main style={{ flex: 1, overflowY: 'auto', padding: 'clamp(1.25rem, 3vw, 2rem)' }}>
           {children}
         </main>
       </div>

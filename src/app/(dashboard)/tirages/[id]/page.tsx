@@ -1,4 +1,4 @@
-import { requireRole } from '@/lib/auth'  // ← ajouter
+import { requireRole } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TirageDetail from '@/components/TirageDetail'
@@ -33,7 +33,6 @@ export default async function TirageDetailPage({
     .select('*, members(id, prenom, nom, email)')
     .eq('session_id', id)
 
-  // Uniquement les membres ACTIFS pour le tirage
   const { data: members } = await supabase
     .from('members')
     .select('*')
@@ -44,6 +43,21 @@ export default async function TirageDetailPage({
     .from('commandes')
     .select('id, member_id, statut')
     .eq('statut', 'active')
+
+  // Lots disponibles depuis le catalogue (stock > 0, disponible)
+  const { data: catalogueLots } = await supabase
+    .from('lots')
+    .select('*')
+    .eq('disponible', true)
+    .gt('stock', 0)
+    .order('categorie')
+
+  // Config du type de tirage (template)
+  const { data: typeConfig } = await supabase
+    .from('tirage_type_configs')
+    .select('*')
+    .eq('type', session.type)
+    .maybeSingle()
 
   return (
     <div>
@@ -80,6 +94,8 @@ export default async function TirageDetailPage({
         }))}
         members={members ?? []}
         commandes={commandes ?? []}
+        catalogueLots={(catalogueLots ?? []) as any[]}
+        typeConfig={typeConfig ?? null}
       />
     </div>
   )

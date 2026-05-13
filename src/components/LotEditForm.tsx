@@ -5,11 +5,7 @@ import { updateLot } from '@/app/actions/lots'
 import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import type { Lot, LotCategorie, LotPalier } from '@/types'
-
-const PALIER_LABELS: Record<LotPalier, string> = {
-  soiree: 'Soirée 16 Mai', tirage_27mai: 'Tirage 27 Mai',
-  argent: 'Argent', or: 'Or', vip: 'VIP',
-}
+import { CATEGORIE_LABELS, PALIER_LOT_LABELS } from '@/types'
 
 export default function LotEditForm({ lot }: { lot: Lot }) {
   const [state, action, isPending] = useActionState(updateLot, null)
@@ -36,34 +32,40 @@ export default function LotEditForm({ lot }: { lot: Lot }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+
+        {/* Catégorie */}
         <div>
           <label className="label" htmlFor="edit-lot-cat">Catégorie *</label>
           <div style={{ position: 'relative' }}>
             <select id="edit-lot-cat" name="categorie" className="input" defaultValue={lot.categorie} required
               style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
-              <option value="petit">Découverte</option>
-              <option value="gros">Prestige</option>
-              <option value="tres_gros">Grand Prix</option>
-            </select>
-            <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
-          </div>
-        </div>
-        <div>
-          <label className="label" htmlFor="edit-lot-pal">Programme *</label>
-          <div style={{ position: 'relative' }}>
-            <select id="edit-lot-pal" name="palier" className="input" defaultValue={lot.palier} required
-              style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
-              {(Object.entries(PALIER_LABELS) as [LotPalier, string][]).map(([v, l]) => (
+              {(Object.entries(CATEGORIE_LABELS) as [LotCategorie, string][]).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
             </select>
             <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
           </div>
         </div>
+
+        {/* Programme */}
+        <div>
+          <label className="label" htmlFor="edit-lot-pal">Programme *</label>
+          <div style={{ position: 'relative' }}>
+            <select id="edit-lot-pal" name="palier" className="input" defaultValue={lot.palier} required
+              style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
+              {(Object.entries(PALIER_LOT_LABELS) as [LotPalier, string][]).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+            <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
+          </div>
+        </div>
+
         <div>
           <label className="label" htmlFor="edit-lot-stock">Stock</label>
           <input id="edit-lot-stock" name="stock" type="number" className="input" defaultValue={lot.stock} min={0} />
         </div>
+
         <div>
           <label className="label" htmlFor="edit-lot-valeur">Valeur (Ar)</label>
           <input id="edit-lot-valeur" name="valeur_ar" type="number" className="input" defaultValue={lot.valeur_ar ?? ''} min={0} />

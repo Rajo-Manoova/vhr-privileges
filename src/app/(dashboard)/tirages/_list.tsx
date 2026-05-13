@@ -7,28 +7,31 @@ import {
   Plus, Play, Trash2, ChevronDown,
   Trophy, Calendar, Loader2, AlertTriangle, Info,
 } from 'lucide-react'
+import { TIRAGE_TYPE_LABELS } from '@/types'
+import type { TirageType } from '@/types'
 
 /* ── Constantes ── */
 
-const TYPE_LABELS: Record<string, string> = {
+// Compat backward : anciens tirages créés avant la migration
+const LEGACY_LABELS: Record<string, string> = {
   soiree_16mai: 'Soirée 16 Mai 2026',
   tirage_27mai: 'Tirage 27 Mai 2026',
-  mensuel:      'Tirage mensuel',
-  trimestriel:  'Tirage trimestriel',
-  semestriel:   'Tirage semestriel',
 }
 
-// Date pré-remplie selon le type (format datetime-local)
-const TYPE_DEFAULTS: Record<string, string> = {
-  soiree_16mai: '2026-05-16T19:00',
-  tirage_27mai: '2026-05-27T20:00',
+function getTirageLabel(type: string, label?: string | null): string {
+  if (label?.trim()) return label.trim()
+  return TIRAGE_TYPE_LABELS[type as TirageType] ?? LEGACY_LABELS[type] ?? type
 }
+
+// Date pré-remplie pour les types récurrents
+const TYPE_DEFAULTS: Partial<Record<TirageType, string>> = {}
 
 /* ── Types ── */
 
 type Session = {
   id: string
   type: string
+  label?: string | null
   status: string
   created_at: string
   scheduled_at: string | null
@@ -75,7 +78,6 @@ function formatScheduled(scheduled_at: string | null): string | null {
   if (diffDays === 0) return `Aujourd'hui à ${time}`
   if (diffDays === 1) return `Demain à ${time}`
   if (diffDays > 1)   return `Dans ${diffDays} jours — ${new Date(scheduled_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} à ${time}`
-  // Passé
   return new Date(scheduled_at).toLocaleDateString('fr-FR', {
     day: '2-digit', month: 'short', year: 'numeric',
   }) + ` à ${time}`
@@ -90,22 +92,23 @@ function todayDatetimeLocal(): string {
 /* ── Composant principal ── */
 
 export default function TiragesList({ initialSessions }: { initialSessions: Session[] }) {
-  const [sessions,   setSessions]   = useState(initialSessions)
-  const [showForm,   setShowForm]   = useState(false)
-  const [type,       setType]       = useState('soiree_16mai')
-  const [scheduledAt, setScheduledAt] = useState(TYPE_DEFAULTS['soiree_16mai'] ?? todayDatetimeLocal())
+  const [sessions,    setSessions]    = useState(initialSessions)
+  const [showForm,    setShowForm]    = useState(false)
+  const [type,        setType]        = useState<TirageType>('ponctuel')
+  const [label,       setLabel]       = useState('')
+  const [scheduledAt, setScheduledAt] = useState(todayDatetimeLocal())
   const [forceCreate, setForceCreate] = useState(false)
-  const [creating,   startCreate]   = useTransition()
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [error,      setError]      = useState<string | null>(null)
+  const [creating,    startCreate]    = useTransition()
+  const [deletingId,  setDeletingId]  = useState<string | null>(null)
+  const [error,       setError]       = useState<string | null>(null)
   const router = useRouter()
 
-  // Doublon : session du même type déjà existante
+  // Doublon : session du même type ET du même label déjà existante
   const existingOfType  = sessions.find(s => s.type === type)
   const isDuplicate     = !!existingOfType && !forceCreate
   const isCompleted     = (existingOfType?.wins_count ?? 0) > 0
 
-  function handleTypeChange(newType: string) {
+  function handleTypeChange(newType: TirageType) {
     setType(newType)
     setForceCreate(false)
     setScheduledAt(TYPE_DEFAULTS[newType] ?? todayDatetimeLocal())
@@ -113,8 +116,9 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
 
   function handleCreate() {
     setError(null)
+    if (!label.trim()) { setError('Le nom du tirage est requis.'); return }
     startCreate(async () => {
-      const result = await createTirageSession(type, scheduledAt || null)
+      const result = await createTirageSession(type, label, scheduledAt || null)
       if (result?.error) setError(result.error)
     })
   }
@@ -159,7 +163,6 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
             Créer une session de tirage
           </div>
 
-          {/* Erreur serveur */}
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
               <span style={{ fontSize: '0.8125rem' }}>{error}</span>
@@ -191,7 +194,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                 <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '0.75rem' }}>
                   {isCompleted
                     ? 'Vous pouvez quand même en créer un nouveau, ou consulter le tirage existant.'
-                    : 'Ouvrez la session existante plutôt que d\'en créer une nouvelle.'}
+                    : "Ouvrez la session existante plutôt que d'en créer une nouvelle."}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button
@@ -225,6 +228,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
           {/* Formulaire (visible si pas de doublon actif, ou si forceCreate) */}
           {(!existingOfType || forceCreate) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
               {/* Type */}
               <div>
                 <label className="label" htmlFor="type-sel">Type de tirage</label>
@@ -232,11 +236,11 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                   <select
                     id="type-sel"
                     value={type}
-                    onChange={e => handleTypeChange(e.target.value)}
+                    onChange={e => handleTypeChange(e.target.value as TirageType)}
                     className="input"
                     style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}
                   >
-                    {Object.entries(TYPE_LABELS).map(([v, l]) => (
+                    {(Object.entries(TIRAGE_TYPE_LABELS) as [TirageType, string][]).map(([v, l]) => (
                       <option key={v} value={v}>{l}</option>
                     ))}
                   </select>
@@ -245,6 +249,25 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none',
                   }} />
                 </div>
+              </div>
+
+              {/* Nom libre */}
+              <div>
+                <label className="label" htmlFor="label-inp">
+                  Nom du tirage *
+                  <span style={{ fontWeight: 400, color: 'var(--text-4)', marginLeft: '0.375rem' }}>
+                    (ex : Soirée Ampefy 16 Mai)
+                  </span>
+                </label>
+                <input
+                  id="label-inp"
+                  type="text"
+                  className="input"
+                  value={label}
+                  onChange={e => setLabel(e.target.value)}
+                  placeholder="Nom libre du tirage"
+                  autoComplete="off"
+                />
               </div>
 
               {/* Date et heure */}
@@ -265,7 +288,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
               </div>
 
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-4)', lineHeight: 1.6, marginTop: '-0.25rem' }}>
-                Les lots seront chargés depuis le catalogue selon le type choisi.
+                Les lots seront ajoutés depuis le catalogue selon le type choisi.
               </p>
 
               <div style={{ display: 'flex', gap: '0.625rem' }}>
@@ -317,6 +340,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
             const status      = computeStatus(session)
             const statusCfg   = STATUS_CONFIG[status]
             const dateDisplay = formatScheduled(session.scheduled_at)
+            const displayName = getTirageLabel(session.type, session.label)
 
             return (
               <div
@@ -362,7 +386,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     flexWrap: 'wrap', marginBottom: '0.25rem',
                   }}>
                     <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)' }}>
-                      {TYPE_LABELS[session.type] ?? session.type}
+                      {displayName}
                     </span>
                     <span style={{
                       padding: '0.15rem 0.5rem', borderRadius: 9999,
@@ -371,6 +395,14 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                       background: statusCfg.bg, color: statusCfg.color,
                     }}>
                       {statusCfg.label}
+                    </span>
+                    {/* Type badge */}
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: 9999,
+                      fontSize: '0.6875rem', fontWeight: 600,
+                      background: 'var(--bg-2)', color: 'var(--text-4)',
+                    }}>
+                      {TIRAGE_TYPE_LABELS[session.type as TirageType] ?? LEGACY_LABELS[session.type] ?? session.type}
                     </span>
                   </div>
 
