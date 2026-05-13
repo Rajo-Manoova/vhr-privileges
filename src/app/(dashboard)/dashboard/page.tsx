@@ -155,8 +155,23 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Carte 3 — Étapes couvertes */}
+        {/* Carte 3 — Cumul inscriptions */}
         <div className="stat-card delay-150" style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
+          <div className="stat-label">Cumul inscriptions</div>
+          <div>
+            <div className="stat-value">
+              {allMembers?.length ?? 0}
+            </div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+              toutes étapes confondues
+            </div>
+          </div>
+        </div>
+
+        {/* Carte 4 — Étapes couvertes */}
+        <div className="stat-card delay-200" style={{
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         }}>
           <div className="stat-label">Étapes couvertes</div>
@@ -167,31 +182,6 @@ export default async function DashboardPage() {
             <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
               sur 5 étapes
             </div>
-          </div>
-        </div>
-
-        {/* ✅ AJOUT : Carte 4 — Cumul inscriptions par étape */}
-        <div className="stat-card delay-200" style={{
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        }}>
-          <div className="stat-label">Cumul inscriptions</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.625rem' }}>
-            {(Object.keys(ETAPE_LABELS) as Etape[]).map(etape => (
-              <div key={etape} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 500 }}>
-                  {ETAPE_LABELS[etape]}
-                </span>
-                <span style={{
-                  fontSize: '0.8125rem', fontWeight: 700,
-                  color: (countByEtape[etape] ?? 0) > 0 ? 'var(--brand)' : 'var(--text-4)',
-                  fontFamily: 'var(--font-display)',
-                }}>
-                  {countByEtape[etape] ?? 0}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
 
