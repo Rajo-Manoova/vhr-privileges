@@ -649,6 +649,10 @@ export default function TirageDetail({
                               </span>
                             )}
                           </div>
+                          {/* ← Ajouter cette ligne */}
+                          <div style={{ fontSize: '0.6875rem', color: 'var(--text-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {m.email}
+                          </div>
                         </div>
 
                         {/* Étape */}
