@@ -22,7 +22,8 @@ export default async function DashboardPage() {
     countByEtape[e] = (countByEtape[e] ?? 0) + 1
   })
 
-  const recent = allMembers?.slice(0, 8) ?? []
+  // ✅ CORRECTION : limité à 5
+  const recent = allMembers?.slice(0, 5) ?? []
 
   const today = new Date().toISOString().split('T')[0]
   const todayCount = allMembers?.filter(m =>
@@ -118,40 +119,82 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {/* Stats */}
+      {/* ✅ CORRECTION : cartes stats avec alignement vertical (flex column + justifyContent) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         gap: '1rem',
         marginBottom: '2rem',
       }}>
-        <div className="stat-card animate-fade-up">
+
+        {/* Carte 1 — Total inscrits */}
+        <div className="stat-card animate-fade-up" style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
           <div className="stat-label">Total inscrits</div>
-          <div className="stat-value">{totalMembers ?? 0}</div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-            sur ~150 attendus
+          <div>
+            <div className="stat-value">{totalMembers ?? 0}</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+              sur ~150 attendus
+            </div>
           </div>
         </div>
 
-        <div className="stat-card delay-75">
+        {/* Carte 2 — Aujourd'hui */}
+        <div className="stat-card delay-75" style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
           <div className="stat-label">Aujourd&apos;hui</div>
-          <div className="stat-value" style={{ color: 'var(--accent)' }}>
-            +{todayCount}
-          </div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-            nouvelles inscriptions
+          <div>
+            <div className="stat-value" style={{ color: 'var(--accent)' }}>
+              +{todayCount}
+            </div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+              nouvelles inscriptions
+            </div>
           </div>
         </div>
 
-        <div className="stat-card delay-150">
+        {/* Carte 3 — Étapes couvertes */}
+        <div className="stat-card delay-150" style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
           <div className="stat-label">Étapes couvertes</div>
-          <div className="stat-value">
-            {Object.keys(countByEtape).length}
-          </div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-            sur 5 étapes
+          <div>
+            <div className="stat-value">
+              {Object.keys(countByEtape).length}
+            </div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+              sur 5 étapes
+            </div>
           </div>
         </div>
+
+        {/* ✅ AJOUT : Carte 4 — Cumul inscriptions par étape */}
+        <div className="stat-card delay-200" style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
+          <div className="stat-label">Cumul inscriptions</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.625rem' }}>
+            {(Object.keys(ETAPE_LABELS) as Etape[]).map(etape => (
+              <div key={etape} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 500 }}>
+                  {ETAPE_LABELS[etape]}
+                </span>
+                <span style={{
+                  fontSize: '0.8125rem', fontWeight: 700,
+                  color: (countByEtape[etape] ?? 0) > 0 ? 'var(--brand)' : 'var(--text-4)',
+                  fontFamily: 'var(--font-display)',
+                }}>
+                  {countByEtape[etape] ?? 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       {/* Grille répartition + dernières inscriptions */}
@@ -297,7 +340,8 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          <Link
+          {/* ✅ CORRECTION : bouton "Nouvelle inscription" commenté */}
+          {/* <Link
             href="/inscription"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -310,7 +354,7 @@ export default async function DashboardPage() {
           >
             <UserPlus size={15} />
             Nouvelle inscription
-          </Link>
+          </Link> */}
         </div>
       </div>
     </div>
