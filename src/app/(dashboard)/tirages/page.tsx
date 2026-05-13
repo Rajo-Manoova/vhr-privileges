@@ -1,7 +1,10 @@
+import { requireRole } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import TiragesList from './_list'
 
 export default async function TiragesPage() {
+  await requireRole(['admin'])
+
   const supabase = await createClient()
 
   const { data: sessions } = await supabase

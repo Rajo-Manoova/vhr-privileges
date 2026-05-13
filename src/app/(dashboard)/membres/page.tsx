@@ -346,10 +346,12 @@ export default async function MembresPage({
                         </Link>
                       )}
 
-                      <ResetPinButton
-                        memberId={m.id}
-                        memberName={`${m.prenom} ${m.nom ?? ''}`.trim()}
-                      />
+                      {isAdmin && (
+                        <ResetPinButton
+                          memberId={m.id}
+                          memberName={`${m.prenom} ${m.nom ?? ''}`.trim()}
+                        />
+                      )}
 
                       {/* Toggle actif — admin uniquement */}
                       {isAdmin && (

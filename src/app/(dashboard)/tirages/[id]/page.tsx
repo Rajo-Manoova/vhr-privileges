@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/auth'  // ← ajouter
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TirageDetail from '@/components/TirageDetail'
@@ -9,6 +10,7 @@ export default async function TirageDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requireRole(['admin'])
   const { id } = await params
   const supabase = await createClient()
 
