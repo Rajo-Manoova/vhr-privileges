@@ -17,6 +17,7 @@ export async function updateMember(
   const email    = (formData.get('email') as string)?.trim().toLowerCase()
   const whatsapp = (formData.get('whatsapp') as string)?.trim()
   const etape    = formData.get('etape') as Etape
+  const notes    = (formData.get('notes') as string)?.trim() || null
 
   if (!id || !prenom || !email || !whatsapp || !etape)
     return { error: 'Tous les champs obligatoires sont requis.' }
@@ -24,12 +25,14 @@ export async function updateMember(
   // Récupérer les valeurs actuelles avant modification
   const { data: current } = await supabase
     .from('members')
-    .select('prenom, nom, email, whatsapp, etape')
+    .select('prenom, nom, email, whatsapp, etape, notes')
     .eq('id', id)
     .single()
 
   const { error } = await supabase
-    .from('members').update({ prenom, nom, email, whatsapp, etape }).eq('id', id)
+    .from('members')
+    .update({ prenom, nom, email, whatsapp, etape, notes })
+    .eq('id', id)
 
   if (error) {
     if (error.code === '23505') return { error: 'Cet email est déjà utilisé.' }
@@ -41,7 +44,7 @@ export async function updateMember(
     `${prenom} ${nom ?? ''}`.trim(),
     {
       before: current ?? {},
-      after:  { prenom, nom, email, whatsapp, etape },
+      after:  { prenom, nom, email, whatsapp, etape, notes },
     },
     id
   )
