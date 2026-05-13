@@ -268,7 +268,7 @@ export default async function MembresPage({
       ) : (
         <>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 660 }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 760 }}>
 
               {/* Header colonnes */}
               <div
