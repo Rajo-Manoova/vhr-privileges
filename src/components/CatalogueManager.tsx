@@ -4,14 +4,8 @@ import { useState, useActionState } from 'react'
 import { addLot, deleteLot, toggleLotField } from '@/app/actions/lots'
 import { useRouter } from 'next/navigation'
 import { Plus, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
-import type { LotPalier } from '@/types'
-
-const PALIER_ORDER: LotPalier[] = ['soiree', 'tirage_27mai', 'argent', 'or', 'vip']
-
-const PALIER_LABELS: Record<LotPalier, string> = {
-  soiree: 'Soirée 16 Mai', tirage_27mai: 'Tirage 27 Mai',
-  argent: 'Argent', or: 'Or', vip: 'VIP',
-}
+import type { LotPalier, LotCategorie } from '@/types'
+import { PALIER_LOT_LABELS, CATEGORIE_LABELS } from '@/types'
 
 export default function CatalogueManager() {
   const [open, setOpen] = useState(false)
@@ -65,35 +59,44 @@ export default function CatalogueManager() {
               <label className="label" htmlFor="lot-desc">Description</label>
               <input id="lot-desc" name="description" type="text" className="input" placeholder="Description courte (optionnel)" />
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+
+              {/* Catégorie */}
               <div>
                 <label className="label" htmlFor="lot-cat">Catégorie *</label>
                 <div style={{ position: 'relative' }}>
                   <select id="lot-cat" name="categorie" className="input" required defaultValue=""
                     style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
                     <option value="" disabled>Catégorie…</option>
-                    <option value="petit">Découverte</option>
-                    <option value="gros">Prestige</option>
-                    <option value="tres_gros">Grand Prix</option>
+                    {(Object.entries(CATEGORIE_LABELS) as [LotCategorie, string][]).map(([v, l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
                   </select>
                   <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
                 </div>
               </div>
+
+              {/* Programme */}
               <div>
                 <label className="label" htmlFor="lot-pal">Programme *</label>
                 <div style={{ position: 'relative' }}>
                   <select id="lot-pal" name="palier" className="input" required defaultValue=""
                     style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
                     <option value="" disabled>Programme…</option>
-                    {PALIER_ORDER.map(p => <option key={p} value={p}>{PALIER_LABELS[p]}</option>)}
+                    {(Object.entries(PALIER_LOT_LABELS) as [LotPalier, string][]).map(([v, l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
                   </select>
                   <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
                 </div>
               </div>
+
               <div>
                 <label className="label" htmlFor="lot-stock">Stock</label>
                 <input id="lot-stock" name="stock" type="number" className="input" defaultValue={1} min={0} />
               </div>
+
               <div>
                 <label className="label" htmlFor="lot-valeur">Valeur (Ar)</label>
                 <input id="lot-valeur" name="valeur_ar" type="number" className="input" placeholder="Interne" min={0} />
