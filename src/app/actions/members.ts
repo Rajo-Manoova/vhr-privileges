@@ -10,16 +10,23 @@ export async function updateMember(
   _prev: { error?: string } | null,
   formData: FormData
 ) {
-  const supabase  = await createClient()
-  const id        = formData.get('id') as string
-  const prenom    = (formData.get('prenom') as string)?.trim()
-  const nom       = (formData.get('nom') as string)?.trim() || null
-  const email     = (formData.get('email') as string)?.trim().toLowerCase()
-  const whatsapp  = (formData.get('whatsapp') as string)?.trim()
-  const etape     = formData.get('etape') as Etape
+  const supabase = await createClient()
+  const id       = formData.get('id') as string
+  const prenom   = (formData.get('prenom') as string)?.trim()
+  const nom      = (formData.get('nom') as string)?.trim() || null
+  const email    = (formData.get('email') as string)?.trim().toLowerCase()
+  const whatsapp = (formData.get('whatsapp') as string)?.trim()
+  const etape    = formData.get('etape') as Etape
 
   if (!id || !prenom || !email || !whatsapp || !etape)
     return { error: 'Tous les champs obligatoires sont requis.' }
+
+  // Récupérer les valeurs actuelles avant modification
+  const { data: current } = await supabase
+    .from('members')
+    .select('prenom, nom, email, whatsapp, etape')
+    .eq('id', id)
+    .single()
 
   const { error } = await supabase
     .from('members').update({ prenom, nom, email, whatsapp, etape }).eq('id', id)
@@ -32,7 +39,11 @@ export async function updateMember(
   await logAction(
     'member.updated', 'member',
     `${prenom} ${nom ?? ''}`.trim(),
-    { email, etape }, id
+    {
+      before: current ?? {},
+      after:  { prenom, nom, email, whatsapp, etape },
+    },
+    id
   )
 
   revalidatePath('/membres')
@@ -51,14 +62,14 @@ export async function resetMemberPin(memberId: string) {
 
   if (error) return { error: error.message }
 
-  // Récupérer le nom du membre pour le log
   const { data: m } = await supabase
     .from('members').select('prenom, nom').eq('id', memberId).single()
 
   await logAction(
     'pin.reset', 'member',
     m ? `${m.prenom} ${m.nom ?? ''}`.trim() : memberId,
-    {}, memberId
+    { data: { action: 'PIN temporaire généré' } },
+    memberId
   )
 
   revalidatePath('/membres')
@@ -82,20 +93,25 @@ export async function toggleMemberActif(memberId: string, actif: boolean) {
     actif ? 'member.activated' : 'member.deactivated',
     'member',
     m ? `${m.prenom} ${m.nom ?? ''}`.trim() : memberId,
-    { actif }, memberId
+    {
+      before: { actif: !actif },
+      after:  { actif },
+    },
+    memberId
   )
 
   revalidatePath('/membres')
   return { success: true }
 }
 
-// Appelé depuis la page inscription (client) après insert réussi
 export async function logMemberCreated(
   memberId: string,
   memberLabel: string,
   etape: string
 ) {
   await logAction(
-    'member.created', 'member', memberLabel, { etape }, memberId
+    'member.created', 'member', memberLabel,
+    { data: { etape } },
+    memberId
   )
 }
