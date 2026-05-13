@@ -68,6 +68,18 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Inscriptions cumulées */}
+        <div className="stat-card" style={{ animationDelay: '225ms' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
+            <TrendingUp size={13} style={{ color: 'var(--brand-light)' }} />
+            <span className="stat-label">Cumulées</span>
+          </div>
+          <div className="stat-value">{total}</div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+            inscriptions
+          </div>
+        </div>
+
         {/* Étapes couvertes */}
         <div className="stat-card delay-150">
           <div className="stat-label">Étapes couvertes</div>
@@ -76,18 +88,6 @@ export default async function DashboardPage() {
           </div>
           <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
             sur 5 étapes
-          </div>
-        </div>
-
-        {/* Inscriptions cumulées */}
-        <div className="stat-card" style={{ animationDelay: '225ms' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
-            <TrendingUp size={13} style={{ color: 'var(--brand-light)' }} />
-            <span className="stat-label">Inscriptions cumulées</span>
-          </div>
-          <div className="stat-value">{total}</div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
-            depuis le début du programme
           </div>
         </div>
 

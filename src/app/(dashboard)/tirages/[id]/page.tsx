@@ -31,9 +31,11 @@ export default async function TirageDetailPage({
     .select('*, members(id, prenom, nom, email)')
     .eq('session_id', id)
 
+  // Uniquement les membres ACTIFS pour le tirage
   const { data: members } = await supabase
     .from('members')
     .select('*')
+    .eq('actif', true)
     .order('created_at', { ascending: false })
 
   const { data: commandes } = await supabase
@@ -50,6 +52,7 @@ export default async function TirageDetailPage({
             display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
             fontSize: '0.875rem', fontWeight: 600,
             color: 'var(--text-3)', textDecoration: 'none',
+            transition: 'color 150ms ease',
           }}
         >
           <ChevronLeft size={15} />
