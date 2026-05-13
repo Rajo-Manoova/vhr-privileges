@@ -93,6 +93,8 @@ export default async function CataloguePage({
       : <ArrowDown size={12} style={{ color: 'var(--brand)' }} />
   }
 
+  const COLS = '1fr 85px 85px 55px 175px'
+
   return (
     <div>
       <div className="page-header" style={{
@@ -127,8 +129,8 @@ export default async function CataloguePage({
           }} />
           <input name="q" type="text" className="input" defaultValue={q}
             placeholder="Rechercher un lot…" style={{ paddingLeft: '2.5rem' }} />
-          {palier    !== 'all' && <input type="hidden" name="palier"     value={palier}    />}
-          {categorie !== 'all' && <input type="hidden" name="categorie"  value={categorie} />}
+          {palier     !== 'all' && <input type="hidden" name="palier"     value={palier}     />}
+          {categorie  !== 'all' && <input type="hidden" name="categorie"  value={categorie}  />}
           {disponible !== 'all' && <input type="hidden" name="disponible" value={disponible} />}
         </form>
 
@@ -217,20 +219,13 @@ export default async function CataloguePage({
       ) : (
         <>
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-            {/*
-              Colonnes : Nom+code | Catégorie | Programme | Stock | Actions (Éditer + Toggle)
-              Réduites pour donner plus de place au nom sur mobile
-            */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 560 }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 720 }}>
 
               {/* Header */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 100px 100px 60px 180px',
-                gap: '0.75rem',
-                padding: '0.75rem 1.25rem',
-                borderBottom: '1px solid var(--border)',
-                background: 'var(--bg-1)',
+                display: 'grid', gridTemplateColumns: COLS,
+                gap: '0.75rem', padding: '0.75rem 1.25rem',
+                borderBottom: '1px solid var(--border)', background: 'var(--bg-1)',
               }}>
                 {([
                   { label: 'Lot',       field: 'nom'       },
@@ -274,10 +269,8 @@ export default async function CataloguePage({
                   <div
                     key={lot.id}
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 100px 100px 60px 180px',
-                      gap: '0.75rem',
-                      padding: '0.75rem 1.25rem',
+                      display: 'grid', gridTemplateColumns: COLS,
+                      gap: '0.75rem', padding: '0.75rem 1.25rem',
                       alignItems: 'center',
                       borderBottom: i < lots.length - 1 ? '1px solid var(--border)' : 'none',
                       background: isEditing
@@ -291,8 +284,7 @@ export default async function CataloguePage({
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
                         <span style={{
-                          fontSize: '0.875rem', fontWeight: 600,
-                          color: 'var(--text-1)',
+                          fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)',
                           textDecoration: lot.disponible ? 'none' : 'line-through',
                         }}>
                           {lot.nom}
@@ -301,17 +293,11 @@ export default async function CataloguePage({
                           <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>★</span>
                         )}
                       </div>
-                      {/* Code article */}
                       <span style={{
-                        display: 'inline-block',
-                        marginTop: '0.125rem',
-                        fontSize: '0.6875rem',
-                        fontFamily: 'monospace',
-                        fontWeight: 600,
-                        color: 'var(--text-4)',
-                        background: 'var(--bg-2)',
-                        padding: '0.1rem 0.375rem',
-                        borderRadius: '0.25rem',
+                        display: 'inline-block', marginTop: '0.25rem',
+                        fontSize: '0.6875rem', fontFamily: 'monospace', fontWeight: 600,
+                        color: 'var(--text-4)', background: 'var(--bg-2)',
+                        padding: '0.1rem 0.375rem', borderRadius: '0.25rem',
                         letterSpacing: '0.05em',
                       }}>
                         {lot.code ?? '—'}
@@ -320,8 +306,7 @@ export default async function CataloguePage({
 
                     {/* Catégorie */}
                     <span style={{
-                      display: 'inline-block',
-                      padding: '0.2rem 0.5rem', borderRadius: 9999,
+                      display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: 9999,
                       fontSize: '0.6875rem', fontWeight: 700,
                       background: cc.bg, color: cc.color, whiteSpace: 'nowrap',
                     }}>
@@ -335,46 +320,36 @@ export default async function CataloguePage({
 
                     {/* Stock — aligné à gauche */}
                     <span style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 700,
-                      fontSize: '0.9375rem',
+                      display: 'block', textAlign: 'left',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9375rem',
                       color: lot.stock === 0 ? '#dc2626' : 'var(--text-1)',
-                      textAlign: 'left',
-                      display: 'block',
                     }}>
                       {lot.stock}
                     </span>
 
-                    {/* Actions : Éditer + Désactiver/Activer */}
+                    {/* Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
                       {isEditing ? (
-                        <Link
-                          href={buildUrl({ edit: undefined })}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            padding: '0.25rem 0.5rem', borderRadius: '0.375rem',
-                            fontSize: '0.75rem', fontWeight: 600,
-                            background: 'var(--bg-2)', color: 'var(--text-3)', textDecoration: 'none',
-                          }}
-                        >
+                        <Link href={buildUrl({ edit: undefined })} style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '0.25rem 0.5rem', borderRadius: '0.375rem',
+                          fontSize: '0.75rem', fontWeight: 600,
+                          background: 'var(--bg-2)', color: 'var(--text-3)', textDecoration: 'none',
+                        }}>
                           ✕
                         </Link>
                       ) : (
-                        <Link
-                          href={buildUrl({ edit: lot.id })}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            padding: '0.25rem 0.5rem', borderRadius: '0.375rem',
-                            fontSize: '0.75rem', fontWeight: 600,
-                            background: 'var(--bg-1)', color: 'var(--text-2)',
-                            textDecoration: 'none', border: '1px solid var(--border)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
+                        <Link href={buildUrl({ edit: lot.id })} style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '0.25rem 0.5rem', borderRadius: '0.375rem',
+                          fontSize: '0.75rem', fontWeight: 600,
+                          background: 'var(--bg-1)', color: 'var(--text-2)',
+                          textDecoration: 'none', border: '1px solid var(--border)', whiteSpace: 'nowrap',
+                        }}>
                           Éditer
                         </Link>
                       )}
 
-                      {/* Désactiver / Activer — admin (page déjà protégée) */}
                       <ToggleLotButton
                         lotId={lot.id}
                         disponible={lot.disponible}
