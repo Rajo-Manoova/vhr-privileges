@@ -68,6 +68,9 @@ function LotsPanel({
       border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`,
       borderRadius: '0.875rem',
       overflow: 'hidden',
+      width: '100%',          // ← ajouter
+      minWidth: 0,            // ← ajouter
+      boxSizing: 'border-box' as const, // ← ajouter
     }}>
       <div style={{
         padding: '0.875rem 1rem',
@@ -692,7 +695,7 @@ export default function TirageDetail({
         </div>
 
         {/* Panel lots (droite) */}
-        <div style={{ flex: '0 0 280px' }}>
+        <div style={{ flex: '1 1 280px', minWidth: 0, width: '100%' }}>
           <LotsPanel
             sessionLots={sessionLots}
             wins={wins}
