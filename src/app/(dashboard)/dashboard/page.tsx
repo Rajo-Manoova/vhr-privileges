@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Users, UserPlus, MapPin, Calendar } from 'lucide-react'
+import { Users, UserPlus, MapPin, Calendar, TrendingUp } from 'lucide-react'
 import { ETAPE_LABELS } from '@/types'
 import type { Etape } from '@/types'
 import Link from 'next/link'
@@ -22,12 +22,14 @@ export default async function DashboardPage() {
     countByEtape[e] = (countByEtape[e] ?? 0) + 1
   })
 
-  const recent = allMembers?.slice(0, 8) ?? []
+  const recent = allMembers?.slice(0, 5) ?? []
 
   const today = new Date().toISOString().split('T')[0]
   const todayCount = allMembers?.filter(m =>
     m.created_at.startsWith(today)
   ).length ?? 0
+
+  const total = totalMembers ?? 0
 
   return (
     <div>
@@ -45,14 +47,17 @@ export default async function DashboardPage() {
         gap: '1rem',
         marginBottom: '2rem',
       }}>
+
+        {/* Total inscrits */}
         <div className="stat-card animate-fade-up">
           <div className="stat-label">Total inscrits</div>
-          <div className="stat-value">{totalMembers ?? 0}</div>
+          <div className="stat-value">{total}</div>
           <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
             sur ~150 attendus
           </div>
         </div>
 
+        {/* Aujourd'hui */}
         <div className="stat-card delay-75">
           <div className="stat-label">Aujourd&apos;hui</div>
           <div className="stat-value" style={{ color: 'var(--accent)' }}>
@@ -63,6 +68,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Étapes couvertes */}
         <div className="stat-card delay-150">
           <div className="stat-label">Étapes couvertes</div>
           <div className="stat-value">
@@ -72,6 +78,19 @@ export default async function DashboardPage() {
             sur 5 étapes
           </div>
         </div>
+
+        {/* Inscriptions cumulées */}
+        <div className="stat-card" style={{ animationDelay: '225ms' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
+            <TrendingUp size={13} style={{ color: 'var(--brand-light)' }} />
+            <span className="stat-label">Inscriptions cumulées</span>
+          </div>
+          <div className="stat-value">{total}</div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: '0.25rem' }}>
+            depuis le début du programme
+          </div>
+        </div>
+
       </div>
 
       {/* Grille répartition + dernières inscriptions */}
@@ -81,6 +100,7 @@ export default async function DashboardPage() {
         gap: '1.5rem',
         marginBottom: '2rem',
       }}>
+
         {/* Répartition par étape */}
         <div className="card">
           <div style={{
@@ -105,7 +125,7 @@ export default async function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {(Object.keys(ETAPE_LABELS) as Etape[]).map(etape => {
               const count = countByEtape[etape] ?? 0
-              const pct = totalMembers ? Math.round((count / totalMembers) * 100) : 0
+              const pct   = total ? Math.round((count / total) * 100) : 0
               return (
                 <div key={etape}>
                   <div style={{
@@ -259,6 +279,7 @@ export default async function DashboardPage() {
             </div>
           )}
 
+          {/* COMMENTÉ — bouton aspect gris semblait inactif
           <Link
             href="/inscription"
             style={{
@@ -281,7 +302,9 @@ export default async function DashboardPage() {
             <UserPlus size={15} />
             Nouvelle inscription
           </Link>
+          */}
         </div>
+
       </div>
     </div>
   )
