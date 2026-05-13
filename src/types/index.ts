@@ -56,6 +56,7 @@ export interface Member {
 
 export interface Lot {
   id: string
+  code?: string | null
   nom: string
   description?: string | null
   categorie: LotCategorie

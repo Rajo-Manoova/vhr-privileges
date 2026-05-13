@@ -8,7 +8,7 @@ import MemberEditForm from '@/components/MemberEditForm'
 import ResetPinButton from '@/components/ResetPinButton'
 import ToggleActifButton from '@/components/ToggleActifButton'
 
-const PER_PAGE = 20
+const PER_PAGE = 10
 type SortField = 'prenom' | 'email' | 'etape' | 'created_at'
 
 export default async function MembresPage({
