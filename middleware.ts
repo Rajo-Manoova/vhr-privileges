@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const publicPaths = ['/login', '/auth/callback']
+  const publicPaths = ['/login', '/auth/callback', '/portail']
   const isPublic = publicPaths.some(p => pathname.startsWith(p))
 
   // Redirige vers login si non authentifié
