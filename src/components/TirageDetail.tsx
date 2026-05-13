@@ -658,7 +658,7 @@ export default function TirageDetail({
                         <button
                           onClick={() => handleAddLot(lot.id)}
                           disabled={isAdding}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.875rem', borderRadius: '0.5rem', border: 'none', background: 'var(--brand)', color: 'white', fontSize: '0.8125rem', fontWeight: 600, cursor: isAdding ? 'wait' : 'pointer', fontFamily: 'var(--font-body)', flexShrink: 0 }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.875rem', borderRadius: '0.5rem', border: 'none', background: 'var(--brand)', color: 'white', fontSize: '0.8125rem', fontWeight: 600, cursor: isAdding ? 'wait' : 'pointer', fontFamily: 'var(--font-body)', flexShrink: 0, whiteSpace: 'nowrap', minWidth: 90 }}
                         >
                           {isAdding ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                           Ajouter
