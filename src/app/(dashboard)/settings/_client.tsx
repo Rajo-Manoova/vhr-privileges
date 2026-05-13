@@ -187,14 +187,16 @@ function TypeConfigPanel({
         </div>
       )}
 
-      {/* Bouton Save */}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: saving ? 'rgba(15,45,53,0.5)' : 'var(--brand)', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: saving ? 'wait' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 150ms ease' }}
-      >
-        {saving ? <><Loader2 size={14} className="animate-spin" /> Enregistrement…</> : <><CheckCircle2 size={14} /> Enregistrer</>}
-      </button>
+      {/* Bouton Save — masqué pour ponctuel */}
+      {!isPonctuel && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: saving ? 'rgba(15,45,53,0.5)' : 'var(--brand)', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: saving ? 'wait' : 'pointer', fontFamily: 'var(--font-body)', transition: 'all 150ms ease' }}
+        >
+          {saving ? <><Loader2 size={14} className="animate-spin" /> Enregistrement…</> : <><CheckCircle2 size={14} /> Enregistrer</>}
+        </button>
+      )}
     </div>
   )
 }
