@@ -10,7 +10,7 @@ export default async function TirageDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireRole(['admin'])
+  const { role } = await requireRole(['admin', 'animateur'])
   const { id } = await params
   const supabase = await createClient()
 
@@ -90,6 +90,7 @@ export default async function TirageDetailPage({
       </div>
 
       <TirageDetail
+        readonly={role === 'animateur'}
         session={{
           id:                   session.id,
           type:                 session.type,

@@ -110,7 +110,7 @@ function todayDatetimeLocal(): string {
 }
 
 /* ── Composant principal ── */
-export default function TiragesList({ initialSessions }: { initialSessions: Session[] }) {
+export default function TiragesList({ initialSessions, readonly = false }: { initialSessions: Session[]; readonly?: boolean }) {
   const [sessions,    setSessions]    = useState(initialSessions)
   const [showForm,    setShowForm]    = useState(false)
   const [type,        setType]        = useState<TirageType>('ponctuel')
@@ -198,7 +198,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
   return (
     <div>
       {/* Bouton Nouveau tirage */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+      {!readonly && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
         <button
           onClick={() => { setShowForm(v => !v); setError(null); setForceCreate(false) }}
           style={{
@@ -214,7 +214,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
           <Plus size={15} />
           {showForm ? 'Annuler' : 'Nouveau tirage'}
         </button>
-      </div>
+      </div>}
 
       {/* Formulaire de création */}
       {showForm && (
@@ -407,19 +407,19 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                       </button>
 
                       {/* Bouton éditer */}
-                      <button onClick={() => startEdit(session)} title="Modifier nom et date" style={{ width: 34, height: 34, borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease', flexShrink: 0 }}
+                      {!readonly && <button onClick={() => startEdit(session)} title="Modifier nom et date" style={{ width: 34, height: 34, borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease', flexShrink: 0 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(15,45,53,0.06)'; (e.currentTarget as HTMLElement).style.color = 'var(--brand)' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
                       >
                         <Pencil size={13} />
-                      </button>
+                      </button>}
 
-                      <button onClick={() => handleDelete(session.id)} disabled={deletingId === session.id} title="Supprimer" style={{ width: 34, height: 34, borderRadius: '0.5rem', border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: deletingId === session.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease', flexShrink: 0 }}
+                      {!readonly && <button onClick={() => handleDelete(session.id)} disabled={deletingId === session.id} title="Supprimer" style={{ width: 34, height: 34, borderRadius: '0.5rem', border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: deletingId === session.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease', flexShrink: 0 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fee2e2'; (e.currentTarget as HTMLElement).style.color = '#dc2626' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
                       >
                         {deletingId === session.id ? <span className="animate-spin" style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: '#dc2626', display: 'inline-block' }} /> : <Trash2 size={14} />}
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 )}

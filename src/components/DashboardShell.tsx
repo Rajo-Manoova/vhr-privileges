@@ -34,6 +34,7 @@ const NAV: Record<Role, NavItem[]> = {
   animateur: [
     { href: '/inscription', icon: UserPlus, label: 'Inscription' },
     { href: '/membres',     icon: Users,    label: 'Membres'     },
+    { href: '/tirages',     icon: Shuffle,  label: 'Tirages'     },
   ],
   membre: [
     { href: '/profil', icon: Trophy, label: 'Mon profil' },

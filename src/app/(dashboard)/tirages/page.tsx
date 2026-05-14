@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import TiragesList from './_list'
 
 export default async function TiragesPage() {
-  await requireRole(['admin'])
+  const { role } = await requireRole(['admin', 'animateur'])
 
   const supabase = await createClient()
 
@@ -22,15 +22,16 @@ export default async function TiragesPage() {
     })
   )
 
+  const isAnimateur = role === 'animateur'
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Tirages au sort</h1>
         <p className="page-subtitle">
-          Créez et gérez toutes les sessions de tirage.
+          {isAnimateur ? 'Sessions de tirage disponibles.' : 'Créez et gérez toutes les sessions de tirage.'}
         </p>
       </div>
-      <TiragesList initialSessions={withCounts} />
+      <TiragesList initialSessions={withCounts} readonly={isAnimateur} />
     </div>
   )
 }

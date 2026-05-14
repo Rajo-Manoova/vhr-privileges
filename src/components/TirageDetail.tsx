@@ -38,6 +38,7 @@ interface Commande {
 }
 
 interface Props {
+  readonly?: boolean
   session: { id: string; type: string; label?: string | null; status: string; eligibilite_override: boolean; tickets_actifs: boolean; max_wins_per_member: number }
   sessionId: string
   initialSessionLots: SessionLot[]
@@ -376,7 +377,7 @@ function VerifyPanel({
 /* ────────────────────────────────────────────────── */
 export default function TirageDetail({
   session, sessionId, initialSessionLots, initialWins, members, commandes,
-  catalogueLots, typeConfig,
+  catalogueLots, typeConfig, readonly = false,
 }: Props) {
   const [sessionLots, setSessionLots] = useState(initialSessionLots)
   const [override,      setOverride]      = useState(session.eligibilite_override)
@@ -1226,11 +1227,18 @@ export default function TirageDetail({
 {ticketsActifs ? ` · ${ticketCount} tickets` : ''}{maxWinsPerMember > 0 ? ` · gain max ${maxWinsPerMember + 1}×` : ''}
           </p>
         </div>
-        {phase !== 'completed' && (
+        <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
+        {readonly && (
+          <a href={`/showcase/${sessionId}`} target="_blank" rel="noopener" style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem', padding:'0.625rem 1.25rem', borderRadius:'0.625rem', background:'var(--brand)', color:'white', border:'none', fontSize:'0.875rem', fontWeight:600, textDecoration:'none', fontFamily:'var(--font-body)' }}>
+            <Maximize2 size={15} /> Showcase
+          </a>
+        )}
+        {phase !== 'completed' && !readonly && (
           <button onClick={toggleProjector} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.625rem', background: 'var(--brand)', color: 'white', border: 'none', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             <Maximize2 size={15} /> Mode projecteur
           </button>
         )}
+        </div>
       </div>
 
       {error && (
@@ -1241,7 +1249,7 @@ export default function TirageDetail({
       )}
 
       {/* ── Section gestion des lots (uniquement si tirage pas commencé) ── */}
-      {phase === 'ready' && (
+      {phase === 'ready' && !readonly && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
 
           {/* Header avec total valeur */}
@@ -1416,7 +1424,9 @@ export default function TirageDetail({
           {/* Draw area */}
           {phase === 'ready' && (
             <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-              {sessionLots.length === 0 ? (
+              {readonly ? (
+                <div style={{ color: 'var(--text-4)', fontSize: '0.875rem' }}>Lecture seule — seul un admin peut lancer le tirage.</div>
+              ) : sessionLots.length === 0 ? (
                 <div style={{ color: 'var(--text-4)', fontSize: '0.875rem' }}>
                   Ajoutez au moins un lot pour commencer le tirage.
                 </div>
