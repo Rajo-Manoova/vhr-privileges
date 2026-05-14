@@ -669,6 +669,30 @@ export default function TirageDetail({
     }
   }
 
+  async function handleDashboardConfirm() {
+    if (!winner) return
+    const currentSL = sessionLots[lotIndex]
+    const newWin: Win = {
+      memberId:     winner.id,
+      memberName:   `${winner.prenom}${winner.nom ? ' ' + winner.nom : ''}`,
+      lotNom:       currentSL.lot?.nom ?? '',
+      sessionLotId: currentSL.id,
+    }
+    setWins(prev => [...prev, newWin])
+    const supabase = createClient()
+    supabase.from('tirage_wins').insert({
+      session_id: sessionId, session_lot_id: currentSL.id, member_id: winner.id,
+    }).then(({ error }) => { if (error) console.error(error) })
+    if (lotIndex < sessionLots.length - 1) {
+      setLotIndex(i => i + 1); setWinner(null); setPhase('ready'); setMembresPage(1)
+    } else {
+      supabase.from('tirage_sessions')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', sessionId).then(() => {})
+      setPhase('completed')
+    }
+  }
+
   async function confirmWinDirect() {
     if (!winner) return
     const currentSL = sessionLots[lotIndex]
@@ -948,39 +972,45 @@ export default function TirageDetail({
 
           {/* READY */}
           {phase === 'ready' && countdown === 0 && (() => {
+            const imgSize = 'min(42vh, 420px)'
             return (
-              <div style={{ textAlign: 'center', maxWidth: 560, width: '100%', margin: '0 auto' }}>
-                {/* Image hero */}
-                {currentLot?.lot?.photo_url ? (
-                  <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: 'min(320px, 40vw)', height: 'min(320px, 40vw)', objectFit: 'cover', borderRadius: '1.5rem', display: 'block', margin: '0 auto 1.75rem', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
-                ) : (
-                  <div style={{ width: 'min(320px, 40vw)', height: 'min(320px, 40vw)', borderRadius: '1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.75rem' }}>
-                    <Trophy size={80} style={{ color: 'rgba(255,255,255,0.1)' }} />
-                  </div>
-                )}
-                {/* Catégorie + Valeur en colonne */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                  {currentLot?.lot?.categorie && (
-                    <span style={{ padding: '0.25rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
-                      {CATEGORIE_LABELS[currentLot.lot.categorie]}
-                    </span>
-                  )}
-                  {currentLot?.lot?.valeur_ar && (
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', color: showValue ? 'var(--accent)' : 'transparent', letterSpacing: '-0.02em', transition: 'color 250ms ease', userSelect: 'none' }}>
-                      {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2rem, 5vw, 5rem)', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: 1100, margin: '0 auto' }}>
+                {/* Image hero — gauche */}
+                <div style={{ flexShrink: 0 }}>
+                  {currentLot?.lot?.photo_url ? (
+                    <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: imgSize, height: imgSize, objectFit: 'cover', borderRadius: '1.5rem', display: 'block', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
+                  ) : (
+                    <div style={{ width: imgSize, height: imgSize, borderRadius: '1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trophy size={80} style={{ color: 'rgba(255,255,255,0.1)' }} />
                     </div>
                   )}
                 </div>
-                {/* Nom du lot */}
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 4vw, 3.25rem)', color: 'white', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '2.25rem' }}>
-                  {currentLot?.lot?.nom}
-                </div>
-                {/* Bouton */}
-                <button onClick={startDraw} style={{ padding: '0.875rem 2.25rem', borderRadius: '0.875rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.375rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', boxShadow: '0 6px 28px rgba(217,119,6,0.4)' }}>
-                  <Play size={18} /> Tirer au sort
-                </button>
-                <div style={{ marginTop: '0.875rem', color: 'rgba(255,255,255,0.18)', fontSize: '0.8125rem' }}>
-                  {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
+                {/* Texte + bouton — droite */}
+                <div style={{ flex: '1 1 280px', minWidth: 0, textAlign: 'left' }}>
+                  {/* Catégorie + Valeur */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1.25rem' }}>
+                    {currentLot?.lot?.categorie && (
+                      <span style={{ display: 'inline-block', padding: '0.25rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', alignSelf: 'flex-start' }}>
+                        {CATEGORIE_LABELS[currentLot.lot.categorie]}
+                      </span>
+                    )}
+                    {currentLot?.lot?.valeur_ar && (
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 3.5vw, 3rem)', color: showValue ? 'var(--accent)' : 'transparent', letterSpacing: '-0.02em', transition: 'color 250ms ease', userSelect: 'none', lineHeight: 1 }}>
+                        {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                      </div>
+                    )}
+                  </div>
+                  {/* Nom du lot */}
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 4vw, 3.5rem)', color: 'white', letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: '2rem' }}>
+                    {currentLot?.lot?.nom}
+                  </div>
+                  {/* Bouton */}
+                  <button onClick={startDraw} style={{ padding: '0.875rem 2.25rem', borderRadius: '0.875rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.375rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', boxShadow: '0 6px 28px rgba(217,119,6,0.4)' }}>
+                    <Play size={18} /> Tirer au sort
+                  </button>
+                  <div style={{ marginTop: '0.75rem', color: 'rgba(255,255,255,0.18)', fontSize: '0.8125rem' }}>
+                    {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
+                  </div>
                 </div>
               </div>
             )
@@ -1326,7 +1356,7 @@ export default function TirageDetail({
 
           {phase === 'winner' && winner && (
             <div className="card animate-scale-in" style={{ padding: '1.75rem' }}>
-              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: 900, color: 'var(--brand)', letterSpacing: '-0.04em', marginBottom: '0.375rem' }}>
                   {winner?.prenom} {winner?.nom ?? ''}
                 </div>
@@ -1334,9 +1364,25 @@ export default function TirageDetail({
                   {winner?.email} · Niveau {PALIER_LABELS[((winner?.niveau ?? 'membre') as Palier)]}
                 </div>
               </div>
-              <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark={false} onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => winner && draw(winner.id)} />
-              <div style={{ textAlign: 'center', marginTop: '0.875rem' }}>
-                <button onClick={skipLot} style={{ background: 'none', border: 'none', color: 'var(--text-4)', fontSize: '0.8125rem', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', transition: 'all 150ms ease' }}
+              {/* Confirmation sans email */}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  onClick={handleDashboardConfirm}
+                  style={{ flex: 1, padding: '0.875rem', borderRadius: '0.75rem', background: '#16a34a', border: 'none', color: 'white', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <CheckCircle2 size={18} /> Confirmer
+                </button>
+                <button
+                  onClick={() => winner && draw(winner.id)}
+                  style={{ flex: 1, padding: '0.875rem', borderRadius: '0.75rem', background: 'var(--bg-2)', border: '1.5px solid var(--border)', color: 'var(--text-2)', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <RotateCcw size={16} /> Re-tirer
+                </button>
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <button
+                  onClick={skipLot}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-4)', fontSize: '0.8125rem', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', transition: 'all 150ms ease' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-2)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
                 >
