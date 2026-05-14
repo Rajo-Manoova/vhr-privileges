@@ -12,7 +12,6 @@ import type { TirageType } from '@/types'
 
 /* ── Constantes ── */
 
-// Compat backward : anciens tirages créés avant la migration
 const LEGACY_LABELS: Record<string, string> = {
   soiree_16mai: 'Soirée 16 Mai 2026',
   tirage_27mai: 'Tirage 27 Mai 2026',
@@ -23,7 +22,6 @@ function getTirageLabel(type: string, label?: string | null): string {
   return TIRAGE_TYPE_LABELS[type as TirageType] ?? LEGACY_LABELS[type] ?? type
 }
 
-// Date pré-remplie pour les types récurrents
 const TYPE_DEFAULTS: Partial<Record<TirageType, string>> = {}
 
 /* ── Types ── */
@@ -98,19 +96,20 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
   const [label,       setLabel]       = useState('')
   const [scheduledAt, setScheduledAt] = useState(todayDatetimeLocal())
   const [forceCreate, setForceCreate] = useState(false)
+  const [touched,     setTouched]     = useState(false) // true après que l'utilisateur change le type
   const [creating,    startCreate]    = useTransition()
   const [deletingId,  setDeletingId]  = useState<string | null>(null)
   const [error,       setError]       = useState<string | null>(null)
   const router = useRouter()
 
-  // Doublon : session du même type ET du même label déjà existante
-  const existingOfType  = sessions.find(s => s.type === type)
-  const isDuplicate     = !!existingOfType && !forceCreate
-  const isCompleted     = (existingOfType?.wins_count ?? 0) > 0
+  // Doublon : uniquement visible après interaction utilisateur
+  const existingOfType = touched ? sessions.find(s => s.type === type) : null
+  const isCompleted    = (existingOfType?.wins_count ?? 0) > 0
 
   function handleTypeChange(newType: TirageType) {
     setType(newType)
     setForceCreate(false)
+    setTouched(true)
     setScheduledAt(TYPE_DEFAULTS[newType] ?? todayDatetimeLocal())
   }
 
@@ -137,7 +136,12 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
       {/* Bouton Nouveau tirage */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
         <button
-          onClick={() => { setShowForm(v => !v); setError(null); setForceCreate(false) }}
+          onClick={() => {
+            setShowForm(v => !v)
+            setError(null)
+            setForceCreate(false)
+            setTouched(false)
+          }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.625rem 1.25rem', borderRadius: '0.625rem',
@@ -169,7 +173,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
             </div>
           )}
 
-          {/* Alerte doublon */}
+          {/* Alerte doublon — uniquement si touched */}
           {existingOfType && !forceCreate && (
             <div
               style={{
@@ -311,7 +315,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                   }
                 </button>
                 <button
-                  onClick={() => { setShowForm(false); setError(null); setForceCreate(false) }}
+                  onClick={() => { setShowForm(false); setError(null); setForceCreate(false); setTouched(false) }}
                   style={{
                     padding: '0.625rem 1rem', borderRadius: '0.625rem',
                     border: '1.5px solid var(--border)', background: 'transparent',
@@ -396,7 +400,6 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     }}>
                       {statusCfg.label}
                     </span>
-                    {/* Type badge */}
                     <span style={{
                       padding: '0.15rem 0.5rem', borderRadius: 9999,
                       fontSize: '0.6875rem', fontWeight: 600,
