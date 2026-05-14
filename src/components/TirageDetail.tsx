@@ -419,6 +419,14 @@ export default function TirageDetail({
   const [showConfetti,       setShowConfetti]       = useState(false)
   const [showConfirmButtons, setShowConfirmButtons] = useState(false)
   const [showValue,          setShowValue]          = useState(true)
+  const [isMobile,           setIsMobile]           = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width:640px)')
+    setIsMobile(mq.matches)
+    const fn = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', fn)
+    return () => mq.removeEventListener('change', fn)
+  }, [])
   const [projectorView, setProjectorView] = useState<'tableau'|'animation'>('tableau')
   const [tableauPage,   setTableauPage]   = useState(1)
   const [skippedIds,    setSkippedIds]    = useState<Set<string>>(new Set())
@@ -786,6 +794,18 @@ export default function TirageDetail({
     const isAllDone   = sortedLots.every(sl => wonIds.has(sl.id) || skippedIds.has(sl.id))
 
     const CSS = `
+      @keyframes cdIn{0%{transform:scale(0.2);opacity:0}50%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+      @keyframes winIn{0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)}65%{transform:scale(1.04);filter:blur(0)}100%{transform:scale(1);opacity:1}}
+      @keyframes photoIn{0%{transform:scale(1.08);opacity:0}100%{transform:scale(1);opacity:1}}
+      @keyframes confetti{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(900deg);opacity:0}}
+      @keyframes pulse{0%,100%{opacity:0.15}50%{opacity:0.35}}
+      @keyframes rowIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:none}}
+      @media(max-width:640px){
+      .proj-title{font-size:0.875rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:38vw!important}
+      }
+      /* placeholder for unused – mobile handled via isMobile state */
+    `
+    const _UNUSED_CSS = `
       @media(max-width:768px){
         /* Header */
         .proj-title{
@@ -897,65 +917,77 @@ export default function TirageDetail({
                 const isNext = sl.id === nextLotId
                 const cc = sl.lot?.categorie ? CATEGORIE_COLORS[sl.lot.categorie] ?? { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' } : null
 
+                // Mobile: 3 cols [img][nom+cat][val+action]  Desktop: 5 cols
+                const mobileGrid = '44px 1fr auto'
+                const desktopGrid = '52px 1fr 120px 120px 1fr'
                 return (
-                  <div key={sl.id} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 120px 120px 1fr', gap: '1rem', padding: '0.875rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: isNext ? 'rgba(255,255,255,0.035)' : 'transparent', alignItems: 'center', animation: `rowIn 0.3s ${i * 0.04}s ease both` }}>
+                  <div key={sl.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? mobileGrid : desktopGrid, gap: isMobile ? '0.5rem' : '1rem', padding: isMobile ? '0.625rem 0.875rem' : '0.875rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: isNext ? 'rgba(255,255,255,0.035)' : 'transparent', alignItems: 'center', animation: `rowIn 0.3s ${i * 0.04}s ease both` }}>
 
-                    {/* Miniature ou numéro */}
+                    {/* Miniature */}
                     {sl.lot?.photo_url ? (
                       <img src={sl.lot.photo_url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '0.5rem', opacity: win || skip ? 0.3 : 1, flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 44, height: 44, borderRadius: '0.5rem', background: win ? 'rgba(34,197,94,0.1)' : skip ? 'rgba(255,255,255,0.04)' : isNext ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: win ? '#4ade80' : skip ? 'rgba(255,255,255,0.15)' : isNext ? 'var(--accent)' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
-                        {win ? '✓' : skip ? '—' : `#${sl.ordre}`}
+                      <div style={{ width: 44, height: 44, borderRadius: '0.5rem', background: win ? 'rgba(34,197,94,0.1)' : isNext ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: win ? '#4ade80' : isNext ? 'var(--accent)' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                        {win ? '✓' : `#${sl.ordre}`}
                       </div>
                     )}
 
-                    {/* Nom */}
+                    {/* Nom + catégorie (mobile: combined) */}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(0.875rem, 1.5vw, 1.125rem)', color: win || skip ? 'rgba(255,255,255,0.3)' : 'white', textDecoration: win ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: isMobile ? '0.8125rem' : 'clamp(0.875rem,1.5vw,1.125rem)', color: win || skip ? 'rgba(255,255,255,0.3)' : 'white', textDecoration: win ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {sl.lot?.nom}
                       </div>
-                    </div>
-
-                    {/* Catégorie */}
-                    <div className="proj-col-cat">
-                      {cc && sl.lot?.categorie && (
-                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' as const }}>
+                      {isMobile && cc && sl.lot?.categorie && (
+                        <span style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
                           {CATEGORIE_LABELS[sl.lot.categorie]}
                         </span>
                       )}
                     </div>
 
-                    {/* Valeur */}
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: showValue ? 'var(--accent)' : 'transparent', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' as const, transition: 'color 200ms ease' }}>
-                      {sl.lot?.valeur_ar ? `${sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar` : ''}
-                    </div>
+                    {/* Catégorie desktop only */}
+                    {!isMobile && (
+                      <div>
+                        {cc && sl.lot?.categorie && (
+                          <span style={{ padding: '0.2rem 0.5rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' as const }}>
+                            {CATEGORIE_LABELS[sl.lot.categorie]}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Action */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0.625rem' }}>
+                    {/* Valeur desktop only */}
+                    {!isMobile && (
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: showValue ? 'var(--accent)' : 'transparent', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' as const }}>
+                        {sl.lot?.valeur_ar ? `${sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar` : ''}
+                      </div>
+                    )}
+
+                    {/* Action — mobile: compressed */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.375rem', flexShrink: 0 }}>
                       {win ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <CheckCircle2 size={14} color="white" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <CheckCircle2 size={12} color="white" />
                           </div>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.5rem)', color: '#4ade80', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? '0.8125rem' : 'clamp(0.875rem,1.8vw,1.25rem)', color: '#4ade80', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: isMobile ? '22vw' : 'none' }}>
                             {win.memberName}
                           </span>
                         </div>
                       ) : skip ? (
-                        <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
                       ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%' }}>
+                        <div style={{ display: 'flex', gap: '0.3rem' }}>
                           <button
                             onClick={() => handleDrawFromTableau(sessionLots.findIndex(s => s.id === sl.id))}
-                            style={{ padding: '0.625rem 0', borderRadius: '0.625rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none' }}
+                            style={{ padding: isMobile ? '0.5rem 0.625rem' : '0.625rem 0', width: isMobile ? 'auto' : '100%', borderRadius: '0.5rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: isMobile ? '0.75rem' : '0.9375rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none', whiteSpace: 'nowrap' as const }}
                           >
-                            <Play size={14} /> Tirer
+                            <Play size={isMobile ? 11 : 14} /> {isMobile ? '' : 'Tirer'}
                           </button>
                           <button
                             onClick={() => skipFromTableau(sl.id)}
-                            style={{ padding: '0.625rem 0', borderRadius: '0.625rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ padding: isMobile ? '0.5rem 0.5rem' : '0.625rem 0', width: isMobile ? 'auto' : '100%', borderRadius: '0.5rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: isMobile ? '0.625rem' : '0.9375rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' as const }}
                           >
-                            Passer
+                            {isMobile ? '→' : 'Passer'}
                           </button>
                         </div>
                       )}
@@ -992,8 +1024,8 @@ export default function TirageDetail({
             <ChevronLeft size={14} /> Tableau
           </button>
 
-          <div style={{ textAlign: 'center' }}>
-            <div className="proj-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.25rem, 2.5vw, 2rem)', color: 'white', letterSpacing: '-0.025em', lineHeight: 1 }}>
+          <div style={{ textAlign: 'center', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div className="proj-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: isMobile ? '0.875rem' : 'clamp(1.25rem, 2.5vw, 2rem)', color: 'white', letterSpacing: '-0.025em', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </div>
             <div style={{ display: 'flex', gap: '3px', marginTop: '0.25rem', justifyContent: 'center' }}>
@@ -1103,7 +1135,7 @@ export default function TirageDetail({
                   )}
                 </div>
               )}
-              <div className="proj-win-name" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9 }}>
+              <div className="proj-win-name" style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 'clamp(2rem,10vw,3.5rem)' : 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {winner.prenom}
               </div>
               {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
