@@ -287,11 +287,12 @@ export default async function CataloguePage({
                     <div style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: '0.375rem', flexShrink: 0,
-                        background: 'var(--bg-2)', overflow: 'hidden',
+                        background: 'white', overflow: 'hidden',
+                        border: '1px solid var(--border)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
                         {lot.photo_url ? (
-                          <img src={lot.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={lot.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                           <span style={{ fontSize: '1rem' }}>📦</span>
                         )}
