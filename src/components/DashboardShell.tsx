@@ -25,7 +25,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/membres',     icon: Users,            label: 'Membres'         },
     { href: '/commandes',   icon: ShoppingCart,     label: 'Commandes'       },
     { href: '/catalogue',   icon: BookOpen,         label: 'Catalogue lots'  },
-    { href: '/recompenses', icon: Award,            label: 'Récompenses'     },
+    { href: '/recompenses', icon: Award,            label: 'Historique des gains'     },
     { href: '/tirages',     icon: Shuffle,          label: 'Tirages'         },
     { href: '/settings',    icon: Settings,         label: 'Paramètres'      },
     { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },

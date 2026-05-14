@@ -6,13 +6,13 @@ import CatalogueManager from '@/components/CatalogueManager'
 import LotEditForm from '@/components/LotEditForm'
 import ToggleLotButton from '@/components/ToggleLotButton'
 import Pagination from '@/components/Pagination'
-import type { Lot, LotPalier, LotCategorie } from '@/types'
-import { CATEGORIE_LABELS, CATEGORIE_COLORS, PALIER_LOT_LABELS } from '@/types'
+import type { Lot, LotCategorie } from '@/types'
+import { CATEGORIE_LABELS, CATEGORIE_COLORS } from '@/types'
 import type { ReactElement } from 'react'
 
 const PER_PAGE = 10
 
-type SortField = 'nom' | 'palier' | 'categorie' | 'stock' | 'created_at'
+type SortField = 'nom' | 'categorie' | 'stock' | 'created_at'
 
 function SortIcon(props: { field: string; sort: string; dir: string }): ReactElement {
   const { field, sort, dir } = props
@@ -25,7 +25,6 @@ export default async function CataloguePage({
   searchParams,
 }: {
   searchParams: Promise<{
-    palier?: string
     categorie?: string
     q?: string
     disponible?: string
@@ -37,7 +36,6 @@ export default async function CataloguePage({
 }) {
   await requireRole(['admin'])
   const params     = await searchParams
-  const palier     = params.palier?.trim()     || 'all'
   const categorie  = params.categorie?.trim()  || 'all'
   const q          = params.q?.trim()          || ''
   const disponible = params.disponible?.trim() || 'all'
@@ -49,13 +47,12 @@ export default async function CataloguePage({
   const supabase = await createClient()
 
   let req = supabase.from('lots').select('*', { count: 'exact' })
-  if (palier    && palier    !== 'all') req = req.eq('palier',    palier)
-  if (categorie && categorie !== 'all') req = req.eq('categorie', categorie)
-  if (disponible === 'oui')             req = req.eq('disponible', true)
-  if (disponible === 'non')             req = req.eq('disponible', false)
-  if (q)                                req = req.ilike('nom', `%${q}%`)
+  if (categorie !== 'all') req = req.eq('categorie', categorie)
+  if (disponible === 'oui') req = req.eq('disponible', true)
+  if (disponible === 'non') req = req.eq('disponible', false)
+  if (q)                    req = req.ilike('nom', `%${q}%`)
 
-  const validSorts: SortField[] = ['nom', 'palier', 'categorie', 'stock', 'created_at']
+  const validSorts: SortField[] = ['nom', 'categorie', 'stock', 'created_at']
   const sortField = validSorts.includes(sort) ? sort : 'created_at'
   const from = (page - 1) * PER_PAGE
 
@@ -74,9 +71,8 @@ export default async function CataloguePage({
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const base: Record<string, string> = {}
-    if (palier    && palier    !== 'all') base.palier    = palier
-    if (categorie && categorie !== 'all') base.categorie = categorie
-    if (disponible && disponible !== 'all') base.disponible = disponible
+    if (categorie  !== 'all') base.categorie  = categorie
+    if (disponible !== 'all') base.disponible = disponible
     if (q)    base.q    = q
     if (sort && sort !== 'created_at') base.sort = sort
     if (dir  && dir  !== 'desc')       base.dir  = dir
@@ -94,26 +90,22 @@ export default async function CataloguePage({
   }
 
   const ep = new URLSearchParams()
-  if (palier    !== 'all') ep.set('palier',    palier)
-  if (categorie !== 'all') ep.set('categorie', categorie)
+  if (categorie  !== 'all') ep.set('categorie',  categorie)
   if (disponible !== 'all') ep.set('disponible', disponible)
   if (q) ep.set('q', q)
   const exportUrl = ep.toString()
     ? `/api/export/catalogue?${ep.toString()}`
     : '/api/export/catalogue'
 
-  const COLS = '1fr 100px 85px 55px 175px'
+  const COLS = '1fr 110px 60px 175px'
 
   return (
     <div>
       <div
         className="page-header"
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '1rem',
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem',
         }}
       >
         <div>
@@ -144,7 +136,7 @@ export default async function CataloguePage({
       {editLot && (
         <div
           className="card animate-fade-in"
-          style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent)', maxWidth: 640 }}
+          style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent)', maxWidth: 560 }}
         >
           <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)', marginBottom: '1rem' }}>
             Modifier — {editLot.nom}
@@ -155,51 +147,23 @@ export default async function CataloguePage({
 
       {/* Filtres */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '1.5rem' }}>
+
+        {/* Recherche */}
         <form method="GET" style={{ position: 'relative', maxWidth: 360 }}>
-          <Search
-            size={15}
-            style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }}
-          />
+          <Search size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
           <input
             name="q" type="text" className="input"
             defaultValue={q} placeholder="Rechercher un lot…"
             style={{ paddingLeft: '2.5rem' }}
           />
-          {palier     !== 'all' && <input type="hidden" name="palier"     value={palier}     />}
           {categorie  !== 'all' && <input type="hidden" name="categorie"  value={categorie}  />}
           {disponible !== 'all' && <input type="hidden" name="disponible" value={disponible} />}
         </form>
 
-        {/* Tabs programme (palier) */}
-        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-          {[
-            { value: 'all', label: 'Tous' },
-            ...Object.entries(PALIER_LOT_LABELS).map(([v, l]) => ({ value: v, label: l })),
-          ].map(({ value, label }) => {
-            const active = palier === value
-            return (
-              <Link
-                key={value}
-                href={buildUrl({ palier: value === 'all' ? undefined : value, page: '1' })}
-                style={{
-                  padding: '0.375rem 0.75rem', borderRadius: 9999,
-                  fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none',
-                  background: active ? 'var(--brand)' : 'white',
-                  color: active ? 'white' : 'var(--text-3)',
-                  border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-                }}
-              >
-                {label}
-              </Link>
-            )
-          })}
-        </div>
-
         {/* Catégorie + disponibilité */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {[
-            { value: 'all',        label: 'Toutes catégories' },
+            { value: 'all', label: 'Toutes catégories' },
             ...Object.entries(CATEGORIE_LABELS).map(([v, l]) => ({ value: v, label: l })),
           ].map(({ value, label }) => {
             const active = categorie === value
@@ -208,12 +172,12 @@ export default async function CataloguePage({
                 key={value}
                 href={buildUrl({ categorie: value === 'all' ? undefined : value, page: '1' })}
                 style={{
-                  padding: '0.25rem 0.625rem', borderRadius: 9999,
-                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
-                  background: active ? 'rgba(15,45,53,0.08)' : 'transparent',
-                  color: active ? 'var(--brand)' : 'var(--text-4)',
-                  border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                  padding: '0.375rem 0.75rem', borderRadius: 9999,
+                  fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
+                  background: active ? 'var(--brand)' : 'white',
+                  color: active ? 'white' : 'var(--text-3)',
+                  border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
+                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)',
                 }}
               >
                 {label}
@@ -235,11 +199,11 @@ export default async function CataloguePage({
                 href={buildUrl({ disponible: value === 'all' ? undefined : value, page: '1' })}
                 style={{
                   padding: '0.25rem 0.625rem', borderRadius: 9999,
-                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
+                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
                   background: active ? 'rgba(15,45,53,0.08)' : 'transparent',
                   color: active ? 'var(--brand)' : 'var(--text-4)',
                   border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)',
                 }}
               >
                 {label}
@@ -258,8 +222,8 @@ export default async function CataloguePage({
         </div>
       ) : (
         <>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 720 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 560 }}>
 
               {/* Header */}
               <div style={{
@@ -271,7 +235,6 @@ export default async function CataloguePage({
                   [
                     { label: 'Lot',       field: 'nom'       },
                     { label: 'Catégorie', field: 'categorie' },
-                    { label: 'Programme', field: 'palier'    },
                     { label: 'Stock',     field: 'stock'     },
                     { label: 'Actions',   field: null        },
                   ] as { label: string; field: string | null }[]
@@ -316,7 +279,7 @@ export default async function CataloguePage({
                       transition: 'opacity 200ms ease',
                     }}
                   >
-                    {/* Nom + code */}
+                    {/* Nom + code + valeur */}
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', textDecoration: lot.disponible ? 'none' : 'line-through' }}>
@@ -348,16 +311,9 @@ export default async function CataloguePage({
                       {CATEGORIE_LABELS[lot.categorie as LotCategorie] ?? lot.categorie}
                     </span>
 
-                    {/* Programme */}
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                      {PALIER_LOT_LABELS[lot.palier as LotPalier] ?? lot.palier}
-                    </span>
-
                     {/* Stock */}
                     <span style={{
-                      display: 'block', textAlign: 'left',
-                      fontFamily: 'var(--font-display)', fontWeight: 700,
-                      fontSize: '0.9375rem',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9375rem',
                       color: lot.stock === 0 ? '#dc2626' : 'var(--text-1)',
                     }}>
                       {lot.stock}

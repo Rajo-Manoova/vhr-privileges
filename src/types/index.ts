@@ -2,7 +2,6 @@ export type Role           = 'admin' | 'animateur' | 'membre'
 export type Etape          = '15_akoor_depart' | '15_faratsiho' | '16_ampefy' | '17_sakay' | '17_akoor_arrivee'
 export type Palier         = 'membre' | 'argent' | 'or' | 'vip'
 export type LotCategorie   = 'decouverte' | 'premium' | 'prestige' | 'grand_prix'
-export type LotPalier      = 'tirage' | 'argent' | 'or' | 'vip'
 export type TirageType     = 'ponctuel' | 'hebdomadaire' | 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel'
 export type TirageStatus   = 'pending' | 'active' | 'completed'
 export type LotStatus      = 'pending' | 'active' | 'confirmed' | 'redrawn'
@@ -44,13 +43,6 @@ export const CATEGORIE_COLORS: Record<LotCategorie, { bg: string; color: string 
   grand_prix: { bg: '#ede9fe', color: '#5b21b6' },
 }
 
-export const PALIER_LOT_LABELS: Record<LotPalier, string> = {
-  tirage: 'Tirage',
-  argent: 'Argent',
-  or:     'Or',
-  vip:    'VIP',
-}
-
 export const TIRAGE_TYPE_LABELS: Record<TirageType, string> = {
   ponctuel:     'Ponctuel',
   hebdomadaire: 'Hebdomadaire',
@@ -77,7 +69,6 @@ export interface Lot {
   nom: string
   description?: string | null
   categorie: LotCategorie
-  palier: LotPalier
   stock: number
   disponible: boolean
   mis_en_avant: boolean
@@ -88,7 +79,7 @@ export interface Lot {
 
 export interface TirageSession {
   id: string
-  type: TirageType | string   // string pour compat avec anciens types (soiree_16mai, etc.)
+  type: TirageType | string
   label?: string | null
   status: TirageStatus
   scheduled_at?: string | null

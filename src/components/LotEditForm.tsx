@@ -4,8 +4,8 @@ import { useActionState } from 'react'
 import { updateLot } from '@/app/actions/lots'
 import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
-import type { Lot, LotCategorie, LotPalier } from '@/types'
-import { CATEGORIE_LABELS, PALIER_LOT_LABELS } from '@/types'
+import type { Lot, LotCategorie } from '@/types'
+import { CATEGORIE_LABELS } from '@/types'
 
 export default function LotEditForm({ lot }: { lot: Lot }) {
   const [state, action, isPending] = useActionState(updateLot, null)
@@ -40,20 +40,6 @@ export default function LotEditForm({ lot }: { lot: Lot }) {
             <select id="edit-lot-cat" name="categorie" className="input" defaultValue={lot.categorie} required
               style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
               {(Object.entries(CATEGORIE_LABELS) as [LotCategorie, string][]).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-            <ChevronDown size={13} style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
-          </div>
-        </div>
-
-        {/* Programme */}
-        <div>
-          <label className="label" htmlFor="edit-lot-pal">Programme *</label>
-          <div style={{ position: 'relative' }}>
-            <select id="edit-lot-pal" name="palier" className="input" defaultValue={lot.palier} required
-              style={{ appearance: 'none', paddingRight: '2rem', cursor: 'pointer' }}>
-              {(Object.entries(PALIER_LOT_LABELS) as [LotPalier, string][]).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
             </select>
