@@ -10,7 +10,7 @@ import {
 import type { Member, Lot, TirageTypeConfig, Palier } from '@/types'
 import { CATEGORIE_LABELS, CATEGORIE_COLORS, ETAPE_LABELS, PALIER_CHANCES, PALIER_ORDER, PALIER_COLORS, PALIER_LABELS, CATEGORIE_PALIER_MIN } from '@/types'
 import type { LotCategorie, Etape } from '@/types'
-import { addSessionLot, removeSessionLot, updateTirageOverride, updateTirageTickets } from '@/app/actions/tirages'
+import { addSessionLot, removeSessionLot, updateTirageOverride, updateTirageTickets, updateTirageMaxWins } from '@/app/actions/tirages'
 
 type Phase = 'ready' | 'animating' | 'winner' | 'completed'
 
@@ -380,6 +380,8 @@ export default function TirageDetail({
   const [ticketsActifs, setTicketsActifs] = useState(session.tickets_actifs)
   const [isPendingOverride, startToggleOverride]  = useTransition()
   const [isPendingTickets,  startToggleTickets]   = useTransition()
+  const [maxWinsLocal,    setMaxWinsLocal]    = useState(session.max_wins_per_member ?? 0)
+  const [isPendingMaxWins, startMaxWins]      = useTransition()
   const [phase, setPhase] = useState<Phase>(
     initialSessionLots.length > 0 && initialWins.length >= initialSessionLots.length
       ? 'completed' : 'ready'
@@ -480,6 +482,11 @@ export default function TirageDetail({
       return base.flatMap(m => Array(PALIER_CHANCES[(m.niveau ?? 'membre') as Palier]).fill(m) as Member[])
     }
     return base
+  }
+
+  async function handleSetMaxWins(val: number) {
+    setMaxWinsLocal(val)
+    startMaxWins(async () => { await updateTirageMaxWins(sessionId, val) })
   }
 
   async function handleToggleOverride() {
@@ -937,12 +944,12 @@ export default function TirageDetail({
         </div>
 
         {/* Zone principale */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowY: 'auto', padding: '2.5rem 2rem', minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', position: 'relative', minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '2.5rem 2rem 2rem' }}>
 
           {/* READY */}
           {phase === 'ready' && countdown === 0 && (() => {
             return (
-              <div style={{ textAlign: 'center', maxWidth: 560, width: '100%' }}>
+              <div style={{ textAlign: 'center', maxWidth: 560, width: '100%', margin: '0 auto' }}>
                 {/* Image hero */}
                 {currentLot?.lot?.photo_url ? (
                   <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: 'min(320px, 40vw)', height: 'min(320px, 40vw)', objectFit: 'cover', borderRadius: '1.5rem', display: 'block', margin: '0 auto 1.75rem', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
@@ -991,14 +998,14 @@ export default function TirageDetail({
 
           {/* ANIMATING */}
           {phase === 'animating' && (
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center', margin: 'auto 0' }}>
               {animName}
             </div>
           )}
 
           {/* WINNER */}
           {phase === 'winner' && winner && (
-            <div style={{ textAlign: 'center', width: '100%', position: 'relative', zIndex: 5, animation: 'winIn 0.75s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+            <div style={{ textAlign: 'center', width: '100%', maxWidth: 700, margin: '0 auto', position: 'relative', zIndex: 5, animation: 'winIn 0.75s cubic-bezier(0.34,1.56,0.64,1) both' }}>
               {currentLot?.lot?.photo_url && (
                 <div style={{ position: 'absolute', inset: -200, backgroundImage: `url(${currentLot.lot.photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06, filter: 'blur(40px)', zIndex: -1 }} />
               )}
@@ -1279,13 +1286,27 @@ export default function TirageDetail({
                   <div style={{ color: 'var(--text-4)', fontSize: '0.875rem', marginBottom: '0.375rem' }}>
                     {eligibleCount} membres éligibles{ticketsActifs ? ` · ${ticketCount} ticket${ticketCount > 1 ? 's' : ''}` : ''}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                     <button onClick={handleToggleOverride} disabled={isPendingOverride} style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, border: `1px solid ${override ? '#bfdbfe' : 'var(--border)'}`, background: override ? '#eff6ff' : 'transparent', color: override ? '#1d4ed8' : 'var(--text-4)', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                       {override ? '🔓 Tous éligibles' : '🔒 Par niveau'}
                     </button>
                     <button onClick={handleToggleTickets} disabled={isPendingTickets} style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, border: `1px solid ${ticketsActifs ? '#fde68a' : 'var(--border)'}`, background: ticketsActifs ? '#fef3c7' : 'transparent', color: ticketsActifs ? '#92400e' : 'var(--text-4)', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                       {ticketsActifs ? '🎫 Tickets ON' : '🎫 Tickets OFF'}
                     </button>
+                  </div>
+                  {/* Re-éligibilité inline */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.6875rem', color: 'var(--text-4)', fontWeight: 600, marginRight: '0.25rem' }}>🔁 Gains max :</span>
+                    {[0, 1, 2, 3].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => handleSetMaxWins(n)}
+                        disabled={isPendingMaxWins}
+                        style={{ padding: '0.15rem 0.5rem', borderRadius: 9999, border: `1px solid ${maxWinsLocal === n ? '#f0abfc' : 'var(--border)'}`, background: maxWinsLocal === n ? '#fdf4ff' : 'transparent', color: maxWinsLocal === n ? '#7e22ce' : 'var(--text-4)', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 150ms' }}
+                      >
+                        {n === 0 ? '1 seul' : `${n + 1}×`}
+                      </button>
+                    ))}
                   </div>
                   <button onClick={() => draw()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', padding: '1rem 2.5rem', borderRadius: '0.875rem', border: 'none', background: 'var(--brand)', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.02em', cursor: 'pointer', boxShadow: '0 4px 16px rgba(15,45,53,0.25)' }}>
                     <Play size={20} /> Tirer au sort

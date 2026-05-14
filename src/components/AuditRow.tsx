@@ -41,6 +41,7 @@ const ACTION_CONFIG: Record<string, { label: string; bg: string; color: string }
   'tirage.lots_reordered':    { label: 'Lots réordonnés',     bg: '#f0f7f8', color: '#2c6976' },
   'tirage.override_updated':  { label: 'Éligibilité modif.',  bg: '#dbeafe', color: '#1d4ed8' },
   'tirage.tickets_updated':   { label: 'Tickets modifiés',    bg: '#fef9c3', color: '#d97706' },
+  'tirage.maxwins_updated':    { label: 'Gains max modifié',    bg: '#fdf4ff', color: '#7e22ce' },
 }
 
 const FIELD_LABELS: Record<string, string> = {

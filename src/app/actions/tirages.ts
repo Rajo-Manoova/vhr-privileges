@@ -134,3 +134,16 @@ export async function reorderSessionLots(
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
+
+export async function updateTirageMaxWins(sessionId: string, maxWins: number) {
+  const supabase = await createClient()
+  const { data: s } = await supabase.from('tirage_sessions').select('label').eq('id', sessionId).single()
+  const { error } = await supabase
+    .from('tirage_sessions')
+    .update({ max_wins_per_member: maxWins })
+    .eq('id', sessionId)
+  if (error) return { error: error.message }
+  await logAction('tirage.maxwins_updated', 'tirage', s?.label ?? sessionId, { data: { max_wins_per_member: maxWins } }, sessionId)
+  revalidatePath(`/tirages/${sessionId}`)
+  return { success: true }
+}
