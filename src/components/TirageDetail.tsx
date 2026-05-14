@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useTransition, startTransition as startT } from 'react'
+import React, { useState, useEffect, useRef, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Play, RotateCcw, CheckCircle2, Maximize2, Minimize2,
   Trophy, AlertCircle, ChevronRight, Users, ChevronDown, ChevronUp,
-  Plus, Trash2, PackageOpen, Loader2,
+  Plus, Trash2, PackageOpen, Loader2, GripVertical, ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react'
 import type { Member, Lot, TirageTypeConfig, Palier } from '@/types'
 import { CATEGORIE_LABELS, CATEGORIE_COLORS, ETAPE_LABELS, PALIER_CHANCES, PALIER_ORDER, PALIER_COLORS, PALIER_LABELS, CATEGORIE_PALIER_MIN } from '@/types'
@@ -61,17 +61,81 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 /* ── Panel lots ── */
+type LotSortField = 'ordre' | 'nom' | 'categorie' | 'valeur_ar'
+
+function SortBtn({ field, sort, dir, dark, onSort }: { field: LotSortField; sort: LotSortField; dir: 'asc'|'desc'; dark: boolean; onSort: (f: LotSortField) => void }) {
+  const active = sort === field
+  const Icon   = active ? (dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+  return (
+    <button onClick={() => onSort(field)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', background: 'none', border: 'none', cursor: 'pointer', padding: '0.1rem 0.25rem', borderRadius: '0.25rem', color: active ? (dark ? 'rgba(255,255,255,0.8)' : 'var(--brand)') : (dark ? 'rgba(255,255,255,0.3)' : 'var(--text-4)'), fontFamily: 'var(--font-body)', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      {field === 'ordre' ? '#' : field === 'nom' ? 'Lot' : field === 'categorie' ? 'Catégorie' : 'Valeur'}
+      <Icon size={9} />
+    </button>
+  )
+}
+
 function LotsPanel({
   sessionLots, wins, lotIndex, phase,
-  onRemove, dark = false,
+  onRemove, onReorder, dark = false,
 }: {
   sessionLots: SessionLot[]
   wins: Win[]
   lotIndex: number
   phase: Phase
   onRemove?: (id: string) => void
+  onReorder?: (orderedIds: string[]) => void
   dark?: boolean
 }) {
+  const [sortField, setSortField] = React.useState<LotSortField>('ordre')
+  const [sortDir,   setSortDir]   = React.useState<'asc'|'desc'>('asc')
+  const [draggingId, setDraggingId] = React.useState<string | null>(null)
+  const [dragOverId, setDragOverId] = React.useState<string | null>(null)
+
+  const canDrag = !!onReorder && phase === 'ready'
+
+  function handleSort(field: LotSortField) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+
+  const sorted = React.useMemo(() => {
+    const arr = [...sessionLots]
+    if (sortField === 'ordre') return arr.sort((a, b) => a.ordre - b.ordre)
+    return arr.sort((a, b) => {
+      let va: any, vb: any
+      if (sortField === 'nom')       { va = a.lot?.nom ?? ''; vb = b.lot?.nom ?? '' }
+      if (sortField === 'categorie') { va = a.lot?.categorie ?? ''; vb = b.lot?.categorie ?? '' }
+      if (sortField === 'valeur_ar') { va = a.lot?.valeur_ar ?? 0; vb = b.lot?.valeur_ar ?? 0 }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1
+      if (va > vb) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [sessionLots, sortField, sortDir])
+
+  function handleDragStart(e: React.DragEvent, id: string) {
+    setDraggingId(id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  function handleDragOver(e: React.DragEvent, id: string) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverId(id)
+  }
+  function handleDrop(e: React.DragEvent, targetId: string) {
+    e.preventDefault()
+    if (!draggingId || draggingId === targetId) return
+    const base = [...sessionLots].sort((a, b) => a.ordre - b.ordre)
+    const fromIdx = base.findIndex(sl => sl.id === draggingId)
+    const toIdx   = base.findIndex(sl => sl.id === targetId)
+    const moved   = base.splice(fromIdx, 1)[0]
+    base.splice(toIdx, 0, moved)
+    onReorder?.(base.map(sl => sl.id))
+    setSortField('ordre')
+    setDraggingId(null)
+    setDragOverId(null)
+  }
+  function handleDragEnd() { setDraggingId(null); setDragOverId(null) }
+
   return (
     <div style={{
       background: dark ? 'rgba(255,255,255,0.05)' : 'white',
@@ -84,31 +148,55 @@ function LotsPanel({
         borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'var(--border)'}`,
         background: dark ? 'rgba(255,255,255,0.04)' : 'var(--bg-1)',
       }}>
-        <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: dark ? 'rgba(255,255,255,0.4)' : 'var(--text-4)' }}>
-          Lots de la session ({sessionLots.length})
-        </span>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: dark ? 'rgba(255,255,255,0.4)' : 'var(--text-4)' }}>
+            Lots ({sessionLots.length})
+          </span>
+          <span style={{ flex: 1 }} />
+          <SortBtn field="ordre"     sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+          <SortBtn field="nom"       sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+          <SortBtn field="categorie" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+          <SortBtn field="valeur_ar" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+        </div>
       </div>
 
       <div style={{ maxHeight: 480, overflowY: 'auto' }}>
-        {sessionLots.map((sl, i) => {
+        {sorted.map((sl, i) => {
           const win       = wins.find(w => w.sessionLotId === sl.id)
-          const isCurrent = i === lotIndex && phase !== 'completed'
+          const isCurrent = sessionLots.findIndex(s => s.id === sl.id) === lotIndex && phase !== 'completed'
           const isDone    = !!win
           const cc        = CATEGORIE_COLORS[sl.lot?.categorie as LotCategorie] ?? { bg: '#f0f7f8', color: '#2c6976' }
+          const isDragging = draggingId === sl.id
+          const isDragOver = dragOverId === sl.id && draggingId !== sl.id
 
           return (
             <div
               key={sl.id}
+              draggable={canDrag && !isDone}
+              onDragStart={canDrag ? e => handleDragStart(e, sl.id) : undefined}
+              onDragOver={canDrag ? e => handleDragOver(e, sl.id) : undefined}
+              onDrop={canDrag ? e => handleDrop(e, sl.id) : undefined}
+              onDragEnd={canDrag ? handleDragEnd : undefined}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.625rem 1rem',
-                borderBottom: i < sessionLots.length - 1
+                borderBottom: i < sorted.length - 1
                   ? `1px solid ${dark ? 'rgba(255,255,255,0.06)' : 'var(--border)'}` : 'none',
-                background: isCurrent
+                background: isDragOver
+                  ? dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,45,53,0.08)'
+                  : isCurrent
                   ? dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,45,53,0.05)' : 'transparent',
-                transition: 'background 300ms ease',
+                opacity: isDragging ? 0.4 : 1,
+                cursor: canDrag && !isDone ? 'grab' : 'default',
+                transition: 'background 200ms ease, opacity 200ms ease',
+                borderTop: isDragOver ? `2px solid var(--brand)` : '2px solid transparent',
               }}
             >
+              {/* Drag handle */}
+              {canDrag && !isDone && (
+                <GripVertical size={14} style={{ color: dark ? 'rgba(255,255,255,0.2)' : 'var(--text-4)', flexShrink: 0, cursor: 'grab' }} />
+              )}
+
               {/* Numéro */}
               <div style={{
                 width: 26, height: 26, borderRadius: '50%',
@@ -369,6 +457,17 @@ export default function TirageDetail({
 
   /* ── Gestion lots ── */
 
+  async function handleReorder(orderedIds: string[]) {
+    const reordered = orderedIds.map((id, i) => {
+      const sl = sessionLots.find(s => s.id === id)!
+      return { ...sl, ordre: i + 1 }
+    })
+    setSessionLots(reordered)
+    // Persist in background
+    const { reorderSessionLots } = await import('@/app/actions/tirages')
+    reorderSessionLots(sessionId, orderedIds)
+  }
+
   async function handleAddLot(lotId: string) {
     setAddingLotId(lotId)
     setLotError(null)
@@ -628,6 +727,7 @@ export default function TirageDetail({
                 lotIndex={lotIndex}
                 phase={phase}
                 onRemove={handleRemoveLot}
+                onReorder={handleReorder}
               />
             </div>
           )}
