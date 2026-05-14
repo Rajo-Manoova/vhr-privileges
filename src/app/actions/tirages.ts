@@ -8,6 +8,7 @@ export async function createTirageSession(
   type: string,
   label: string,
   scheduledAt?: string | null,
+  ticketsActifs: boolean = true,
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,16 +20,40 @@ export async function createTirageSession(
     .from('tirage_sessions')
     .insert({
       type,
-      label:        label.trim(),
-      status:       'pending',
-      created_by:   user.id,
-      scheduled_at: scheduledAt || null,
+      label:                label.trim(),
+      status:               'pending',
+      created_by:           user.id,
+      scheduled_at:         scheduledAt || null,
+      eligibilite_override: false,
+      tickets_actifs:       ticketsActifs,
     })
     .select()
     .single()
 
   if (error) return { error: error.message }
   redirect(`/tirages/${session.id}`)
+}
+
+export async function updateTirageOverride(sessionId: string, override: boolean) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('tirage_sessions')
+    .update({ eligibilite_override: override })
+    .eq('id', sessionId)
+  if (error) return { error: error.message }
+  revalidatePath(`/tirages/${sessionId}`)
+  return { success: true }
+}
+
+export async function updateTirageTickets(sessionId: string, ticketsActifs: boolean) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('tirage_sessions')
+    .update({ tickets_actifs: ticketsActifs })
+    .eq('id', sessionId)
+  if (error) return { error: error.message }
+  revalidatePath(`/tirages/${sessionId}`)
+  return { success: true }
 }
 
 export async function deleteTirageSession(sessionId: string) {
@@ -45,14 +70,13 @@ export async function deleteTirageSession(sessionId: string) {
 export async function addSessionLot(sessionId: string, lotId: string) {
   const supabase = await createClient()
 
-  // Récupérer l'ordre max actuel
   const { data: last } = await supabase
     .from('session_lots')
     .select('ordre')
     .eq('session_id', sessionId)
     .order('ordre', { ascending: false })
     .limit(1)
-    .maybeSingle()
+    .single()
 
   const nextOrdre = (last?.ordre ?? 0) + 1
 
@@ -63,7 +87,6 @@ export async function addSessionLot(sessionId: string, lotId: string) {
     .single()
 
   if (error) return { error: error.message }
-  revalidatePath(`/tirages/${sessionId}`)
   return { data }
 }
 
@@ -74,6 +97,19 @@ export async function removeSessionLot(sessionLotId: string, sessionId: string) 
     .delete()
     .eq('id', sessionLotId)
   if (error) return { error: error.message }
+  revalidatePath(`/tirages/${sessionId}`)
+  return { success: true }
+}
+
+export async function reorderSessionLots(
+  sessionId: string,
+  orderedIds: string[]
+) {
+  const supabase = await createClient()
+  const updates = orderedIds.map((id, i) =>
+    supabase.from('session_lots').update({ ordre: i + 1 }).eq('id', id)
+  )
+  await Promise.all(updates)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }

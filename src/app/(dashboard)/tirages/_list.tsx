@@ -12,6 +12,7 @@ import type { TirageType } from '@/types'
 
 /* ── Constantes ── */
 
+// Compat backward : anciens tirages créés avant la migration
 const LEGACY_LABELS: Record<string, string> = {
   soiree_16mai: 'Soirée 16 Mai 2026',
   tirage_27mai: 'Tirage 27 Mai 2026',
@@ -22,6 +23,7 @@ function getTirageLabel(type: string, label?: string | null): string {
   return TIRAGE_TYPE_LABELS[type as TirageType] ?? LEGACY_LABELS[type] ?? type
 }
 
+// Date pré-remplie pour les types récurrents
 const TYPE_DEFAULTS: Partial<Record<TirageType, string>> = {}
 
 /* ── Types ── */
@@ -96,20 +98,20 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
   const [label,       setLabel]       = useState('')
   const [scheduledAt, setScheduledAt] = useState(todayDatetimeLocal())
   const [forceCreate, setForceCreate] = useState(false)
-  const [touched,     setTouched]     = useState(false) // true après que l'utilisateur change le type
-  const [creating,    startCreate]    = useTransition()
+  const [ticketsActifs, setTicketsActifs] = useState(true)
+  const [creating,      startCreate]    = useTransition()
   const [deletingId,  setDeletingId]  = useState<string | null>(null)
   const [error,       setError]       = useState<string | null>(null)
   const router = useRouter()
 
-  // Doublon : uniquement visible après interaction utilisateur
-  const existingOfType = touched ? sessions.find(s => s.type === type) : null
-  const isCompleted    = (existingOfType?.wins_count ?? 0) > 0
+  // Doublon : session du même type ET du même label déjà existante
+  const existingOfType  = sessions.find(s => s.type === type)
+  const isDuplicate     = !!existingOfType && !forceCreate
+  const isCompleted     = (existingOfType?.wins_count ?? 0) > 0
 
   function handleTypeChange(newType: TirageType) {
     setType(newType)
     setForceCreate(false)
-    setTouched(true)
     setScheduledAt(TYPE_DEFAULTS[newType] ?? todayDatetimeLocal())
   }
 
@@ -117,7 +119,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
     setError(null)
     if (!label.trim()) { setError('Le nom du tirage est requis.'); return }
     startCreate(async () => {
-      const result = await createTirageSession(type, label, scheduledAt || null)
+      const result = await createTirageSession(type, label, scheduledAt || null, ticketsActifs)
       if (result?.error) setError(result.error)
     })
   }
@@ -136,12 +138,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
       {/* Bouton Nouveau tirage */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
         <button
-          onClick={() => {
-            setShowForm(v => !v)
-            setError(null)
-            setForceCreate(false)
-            setTouched(false)
-          }}
+          onClick={() => { setShowForm(v => !v); setError(null); setForceCreate(false) }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.625rem 1.25rem', borderRadius: '0.625rem',
@@ -173,7 +170,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
             </div>
           )}
 
-          {/* Alerte doublon — uniquement si touched */}
+          {/* Alerte doublon */}
           {existingOfType && !forceCreate && (
             <div
               style={{
@@ -291,6 +288,35 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                 />
               </div>
 
+              {/* Tickets */}
+              <div>
+                <label className="label">Options</label>
+                <button
+                  type="button"
+                  onClick={() => setTicketsActifs(v => !v)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.625rem',
+                    padding: '0.625rem 1rem', borderRadius: '0.625rem',
+                    border: `1.5px solid ${ticketsActifs ? '#fde68a' : 'var(--border)'}`,
+                    background: ticketsActifs ? '#fef3c7' : 'var(--bg-1)',
+                    color: ticketsActifs ? '#92400e' : 'var(--text-3)',
+                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>🎫</span>
+                  Tickets par niveau
+                  <span style={{ marginLeft: '0.25rem', padding: '0.1rem 0.5rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: ticketsActifs ? '#92400e' : 'var(--border)', color: ticketsActifs ? 'white' : 'var(--text-4)' }}>
+                    {ticketsActifs ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-4)', marginTop: '0.375rem', lineHeight: 1.5 }}>
+                  {ticketsActifs
+                    ? 'Membre×1, Argent×2, Or×3, VIP×5 — plus de chances selon le niveau.'
+                    : '1 chance par membre, quel que soit le niveau.'}
+                </p>
+              </div>
+
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-4)', lineHeight: 1.6, marginTop: '-0.25rem' }}>
                 Les lots seront ajoutés depuis le catalogue selon le type choisi.
               </p>
@@ -315,7 +341,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                   }
                 </button>
                 <button
-                  onClick={() => { setShowForm(false); setError(null); setForceCreate(false); setTouched(false) }}
+                  onClick={() => { setShowForm(false); setError(null); setForceCreate(false) }}
                   style={{
                     padding: '0.625rem 1rem', borderRadius: '0.625rem',
                     border: '1.5px solid var(--border)', background: 'transparent',
@@ -400,6 +426,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     }}>
                       {statusCfg.label}
                     </span>
+                    {/* Type badge */}
                     <span style={{
                       padding: '0.15rem 0.5rem', borderRadius: 9999,
                       fontSize: '0.6875rem', fontWeight: 600,

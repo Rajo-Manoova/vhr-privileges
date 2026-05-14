@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition, startTransition as startT } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Play, RotateCcw, CheckCircle2, Maximize2, Minimize2,
   Trophy, AlertCircle, ChevronRight, Users, ChevronDown, ChevronUp,
   Plus, Trash2, PackageOpen, Loader2,
 } from 'lucide-react'
-import type { Member, Lot, TirageTypeConfig } from '@/types'
-import { CATEGORIE_LABELS, CATEGORIE_COLORS, ETAPE_LABELS } from '@/types'
+import type { Member, Lot, TirageTypeConfig, Palier } from '@/types'
+import { CATEGORIE_LABELS, CATEGORIE_COLORS, ETAPE_LABELS, PALIER_CHANCES, PALIER_ORDER, PALIER_COLORS, PALIER_LABELS, CATEGORIE_PALIER_MIN } from '@/types'
 import type { LotCategorie, Etape } from '@/types'
-import { addSessionLot, removeSessionLot } from '@/app/actions/tirages'
+import { addSessionLot, removeSessionLot, updateTirageOverride, updateTirageTickets } from '@/app/actions/tirages'
 
 type Phase = 'ready' | 'animating' | 'winner' | 'completed'
 
@@ -38,7 +38,7 @@ interface Commande {
 }
 
 interface Props {
-  session: { id: string; type: string; label?: string | null; status: string }
+  session: { id: string; type: string; label?: string | null; status: string; eligibilite_override: boolean; tickets_actifs: boolean }
   sessionId: string
   initialSessionLots: SessionLot[]
   initialWins: Win[]
@@ -121,7 +121,7 @@ function LotsPanel({
                 {isDone ? '✓' : sl.ordre}
               </div>
 
-              {/* Nom + gagnant */}
+              {/* Nom + valeur + gagnant */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontSize: '0.8125rem', fontWeight: isDone ? 500 : 600,
@@ -134,6 +134,11 @@ function LotsPanel({
                 }}>
                   {sl.lot?.nom}
                 </div>
+                {sl.lot?.valeur_ar && (
+                  <div style={{ fontSize: '0.625rem', color: dark ? 'rgba(255,255,255,0.25)' : 'var(--text-4)', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                    {sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                  </div>
+                )}
                 {win && (
                   <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: dark ? '#4ade80' : '#16a34a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     🏆 {win.memberName}
@@ -247,6 +252,10 @@ export default function TirageDetail({
   catalogueLots, typeConfig,
 }: Props) {
   const [sessionLots, setSessionLots] = useState(initialSessionLots)
+  const [override,      setOverride]      = useState(session.eligibilite_override)
+  const [ticketsActifs, setTicketsActifs] = useState(session.tickets_actifs)
+  const [isPendingOverride, startToggleOverride]  = useTransition()
+  const [isPendingTickets,  startToggleTickets]   = useTransition()
   const [phase, setPhase] = useState<Phase>(
     initialSessionLots.length > 0 && initialWins.length >= initialSessionLots.length
       ? 'completed' : 'ready'
@@ -302,19 +311,47 @@ export default function TirageDetail({
 
   function getPool(excludeIds: string[] = []): Member[] {
     const excludeSet = new Set(excludeIds)
-    if (isSoiree) {
-      return members.filter(m => {
+
+    // 1. Éligibilité : override → tous, sinon filtrer par niveau vs catégorie du lot en cours
+    let base: Member[]
+    if (override) {
+      base = members.filter(m => !excludeSet.has(m.id))
+    } else {
+      const lotCategorie = sessionLots[lotIndex]?.lot?.categorie
+      const minPalier    = (lotCategorie ? CATEGORIE_PALIER_MIN[lotCategorie] : 'membre') as Palier
+      const minOrder     = PALIER_ORDER[minPalier]
+      base = members.filter(m => {
         if (excludeSet.has(m.id)) return false
-        return wins.filter(w => w.memberId === m.id).length < 2
+        const mOrder = PALIER_ORDER[(m.niveau ?? 'membre') as Palier]
+        return mOrder >= minOrder
       })
     }
-    const winnerIds = new Set(wins.map(w => w.memberId))
-    return members
-      .filter(m => !winnerIds.has(m.id) && !excludeSet.has(m.id))
-      .flatMap(m => {
-        const count = commandes.filter(c => c.member_id === m.id && c.statut === 'active').length
-        return Array(count).fill(m) as Member[]
-      })
+
+    // 2. Limite de gains : soirée max 2, autres max 1
+    if (isSoiree) {
+      base = base.filter(m => wins.filter(w => w.memberId === m.id).length < 2)
+    } else {
+      const winnerIds = new Set(wins.map(w => w.memberId))
+      base = base.filter(m => !winnerIds.has(m.id))
+    }
+
+    // 3. Tickets : pondéré par niveau ou 1 chance flat
+    if (ticketsActifs) {
+      return base.flatMap(m => Array(PALIER_CHANCES[(m.niveau ?? 'membre') as Palier]).fill(m) as Member[])
+    }
+    return base
+  }
+
+  async function handleToggleOverride() {
+    const next = !override
+    setOverride(next)
+    startToggleOverride(async () => { await updateTirageOverride(sessionId, next) })
+  }
+
+  async function handleToggleTickets() {
+    const next = !ticketsActifs
+    setTicketsActifs(next)
+    startToggleTickets(async () => { await updateTirageTickets(sessionId, next) })
   }
 
   const currentPool   = getPool()
@@ -719,10 +756,15 @@ export default function TirageDetail({
               ) : (
                 <>
                   <div style={{ color: 'var(--text-4)', fontSize: '0.875rem', marginBottom: '0.375rem' }}>
-                    {eligibleCount} membres éligibles{!isSoiree && ` · ${ticketCount} tickets`}
+                    {eligibleCount} membres éligibles{ticketsActifs ? ` · ${ticketCount} ticket${ticketCount > 1 ? 's' : ''}` : ''}
                   </div>
-                  <div style={{ color: 'var(--text-4)', fontSize: '0.8125rem', marginBottom: '1.75rem' }}>
-                    {isSoiree ? 'Tirage équitable' : 'Pondéré par commandes'}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                    <button onClick={handleToggleOverride} disabled={isPendingOverride} style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, border: `1px solid ${override ? '#bfdbfe' : 'var(--border)'}`, background: override ? '#eff6ff' : 'transparent', color: override ? '#1d4ed8' : 'var(--text-4)', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                      {override ? '🔓 Tous éligibles' : '🔒 Par niveau'}
+                    </button>
+                    <button onClick={handleToggleTickets} disabled={isPendingTickets} style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, border: `1px solid ${ticketsActifs ? '#fde68a' : 'var(--border)'}`, background: ticketsActifs ? '#fef3c7' : 'transparent', color: ticketsActifs ? '#92400e' : 'var(--text-4)', fontSize: '0.6875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                      {ticketsActifs ? '🎫 Tickets ON' : '🎫 Tickets OFF'}
+                    </button>
                   </div>
                   <button onClick={() => draw()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', padding: '1rem 2.5rem', borderRadius: '0.875rem', border: 'none', background: 'var(--brand)', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.02em', cursor: 'pointer', boxShadow: '0 4px 16px rgba(15,45,53,0.25)' }}>
                     <Play size={20} /> Tirer au sort
@@ -747,8 +789,7 @@ export default function TirageDetail({
                   {winner.prenom} {winner.nom ?? ''}
                 </div>
                 <div style={{ color: 'var(--text-4)', fontSize: '0.875rem' }}>
-                  {winner.email}
-                  {!isSoiree && <> · {commandes.filter(c => c.member_id === winner.id).length} commande{commandes.filter(c => c.member_id === winner.id).length > 1 ? 's' : ''}</>}
+                  {winner.email} · Niveau {PALIER_LABELS[(winner.niveau ?? 'membre') as Palier]}
                 </div>
               </div>
               <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark={false} onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => draw(winner.id)} />
@@ -798,7 +839,7 @@ export default function TirageDetail({
                   {membresSlice.map((m, i) => {
                     const memberWins  = wins.filter(w => w.memberId === m.id).length
                     const isWinner    = memberWins > 0
-                    const nbTickets   = !isSoiree ? commandes.filter(c => c.member_id === m.id && c.statut === 'active').length : null
+                    const nbTickets   = ticketsActifs ? PALIER_CHANCES[(m.niveau ?? 'membre') as Palier] : null
 
                     return (
                       <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1rem', borderBottom: i < membresSlice.length - 1 ? '1px solid var(--border)' : 'none', background: isWinner ? '#f0fdf4' : 'white', opacity: isWinner ? 0.7 : 1 }}>
@@ -815,8 +856,8 @@ export default function TirageDetail({
                         <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--brand-light)', background: 'rgba(51,128,141,0.08)', padding: '0.15rem 0.4rem', borderRadius: 9999, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                           {ETAPE_LABELS[m.etape as Etape]?.split('(')[0].trim() ?? m.etape}
                         </span>
-                        {nbTickets !== null && (
-                          <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-4)', flexShrink: 0 }}>×{nbTickets}</span>
+                        {nbTickets !== null && nbTickets > 1 && (
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#92400e', background: '#fef3c7', padding: '0.1rem 0.375rem', borderRadius: 9999, flexShrink: 0 }}>×{nbTickets}</span>
                         )}
                       </div>
                     )

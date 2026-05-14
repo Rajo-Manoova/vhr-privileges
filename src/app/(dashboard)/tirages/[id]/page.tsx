@@ -44,7 +44,6 @@ export default async function TirageDetailPage({
     .select('id, member_id, statut')
     .eq('statut', 'active')
 
-  // Lots disponibles depuis le catalogue (stock > 0, disponible)
   const { data: catalogueLots } = await supabase
     .from('lots')
     .select('*')
@@ -52,7 +51,6 @@ export default async function TirageDetailPage({
     .gt('stock', 0)
     .order('categorie')
 
-  // Config du type de tirage (template)
   const { data: typeConfig } = await supabase
     .from('tirage_type_configs')
     .select('*')
@@ -77,19 +75,26 @@ export default async function TirageDetailPage({
       </div>
 
       <TirageDetail
-        session={session}
+        session={{
+          id:                   session.id,
+          type:                 session.type,
+          label:                session.label,
+          status:               session.status,
+          eligibilite_override: session.eligibilite_override ?? false,
+          tickets_actifs:       session.tickets_actifs ?? true,
+        }}
         sessionId={id}
         initialSessionLots={(sessionLots ?? []).map(sl => ({
-          id: sl.id,
+          id:     sl.id,
           lot_id: sl.lot_id,
-          ordre: sl.ordre,
+          ordre:  sl.ordre,
           status: sl.status,
-          lot: sl.lots as any,
+          lot:    sl.lots as any,
         }))}
         initialWins={(existingWins ?? []).map((w: any) => ({
-          memberId: w.members?.id ?? '',
-          memberName: `${w.members?.prenom ?? ''} ${w.members?.nom ?? ''}`.trim(),
-          lotNom: '',
+          memberId:     w.members?.id ?? '',
+          memberName:   `${w.members?.prenom ?? ''} ${w.members?.nom ?? ''}`.trim(),
+          lotNom:       '',
           sessionLotId: w.session_lot_id,
         }))}
         members={members ?? []}
