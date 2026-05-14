@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { logAction } from '@/lib/audit'
 
 export async function createTirageSession(
   type: string,
@@ -31,6 +32,13 @@ export async function createTirageSession(
     .single()
 
   if (error) return { error: error.message }
+
+  await logAction(
+    'tirage.created', 'tirage', label.trim(),
+    { data: { type, scheduled_at: scheduledAt, tickets_actifs: ticketsActifs } },
+    session.id
+  )
+
   redirect(`/tirages/${session.id}`)
 }
 
@@ -41,6 +49,7 @@ export async function updateTirageOverride(sessionId: string, override: boolean)
     .update({ eligibilite_override: override })
     .eq('id', sessionId)
   if (error) return { error: error.message }
+  await logAction('tirage.override_updated', 'tirage', sessionId, { data: { eligibilite_override: override } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
@@ -52,17 +61,20 @@ export async function updateTirageTickets(sessionId: string, ticketsActifs: bool
     .update({ tickets_actifs: ticketsActifs })
     .eq('id', sessionId)
   if (error) return { error: error.message }
+  await logAction('tirage.tickets_updated', 'tirage', sessionId, { data: { tickets_actifs: ticketsActifs } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
 
 export async function deleteTirageSession(sessionId: string) {
   const supabase = await createClient()
+  const { data: s } = await supabase.from('tirage_sessions').select('label, type').eq('id', sessionId).single()
   const { error } = await supabase
     .from('tirage_sessions')
     .delete()
     .eq('id', sessionId)
   if (error) return { error: error.message }
+  await logAction('tirage.deleted', 'tirage', s?.label ?? sessionId, {}, sessionId)
   revalidatePath('/tirages')
   return { success: true }
 }
@@ -87,6 +99,7 @@ export async function addSessionLot(sessionId: string, lotId: string) {
     .single()
 
   if (error) return { error: error.message }
+  await logAction('tirage.lot_added', 'tirage', sessionId, { data: { lot_id: lotId } }, sessionId)
   return { data }
 }
 
@@ -97,6 +110,7 @@ export async function removeSessionLot(sessionLotId: string, sessionId: string) 
     .delete()
     .eq('id', sessionLotId)
   if (error) return { error: error.message }
+  await logAction('tirage.lot_removed', 'tirage', sessionId, { data: { session_lot_id: sessionLotId } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
@@ -110,6 +124,7 @@ export async function reorderSessionLots(
     supabase.from('session_lots').update({ ordre: i + 1 }).eq('id', id)
   )
   await Promise.all(updates)
+  await logAction('tirage.lots_reordered', 'tirage', sessionId, { data: { order: orderedIds } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
