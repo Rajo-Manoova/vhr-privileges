@@ -47,10 +47,10 @@ export default async function CataloguePage({
   const supabase = await createClient()
 
   let req = supabase.from('lots').select('*', { count: 'exact' })
-  if (categorie !== 'all') req = req.eq('categorie', categorie)
-  if (disponible === 'oui') req = req.eq('disponible', true)
-  if (disponible === 'non') req = req.eq('disponible', false)
-  if (q)                    req = req.ilike('nom', `%${q}%`)
+  if (categorie && categorie !== 'all') req = req.eq('categorie', categorie)
+  if (disponible === 'oui')             req = req.eq('disponible', true)
+  if (disponible === 'non')             req = req.eq('disponible', false)
+  if (q)                                req = req.ilike('nom', `%${q}%`)
 
   const validSorts: SortField[] = ['nom', 'categorie', 'stock', 'created_at']
   const sortField = validSorts.includes(sort) ? sort : 'created_at'
@@ -71,8 +71,8 @@ export default async function CataloguePage({
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const base: Record<string, string> = {}
-    if (categorie  !== 'all') base.categorie  = categorie
-    if (disponible !== 'all') base.disponible = disponible
+    if (categorie !== 'all') base.categorie = categorie
+    if (disponible && disponible !== 'all') base.disponible = disponible
     if (q)    base.q    = q
     if (sort && sort !== 'created_at') base.sort = sort
     if (dir  && dir  !== 'desc')       base.dir  = dir
@@ -90,7 +90,7 @@ export default async function CataloguePage({
   }
 
   const ep = new URLSearchParams()
-  if (categorie  !== 'all') ep.set('categorie',  categorie)
+  if (categorie !== 'all') ep.set('categorie', categorie)
   if (disponible !== 'all') ep.set('disponible', disponible)
   if (q) ep.set('q', q)
   const exportUrl = ep.toString()
@@ -104,8 +104,11 @@ export default async function CataloguePage({
       <div
         className="page-header"
         style={{
-          display: 'flex', justifyContent: 'space-between',
-          alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          gap: '1rem',
         }}
       >
         <div>
@@ -136,7 +139,7 @@ export default async function CataloguePage({
       {editLot && (
         <div
           className="card animate-fade-in"
-          style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent)', maxWidth: 560 }}
+          style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent)', maxWidth: 640 }}
         >
           <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)', marginBottom: '1rem' }}>
             Modifier — {editLot.nom}
@@ -147,10 +150,11 @@ export default async function CataloguePage({
 
       {/* Filtres */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '1.5rem' }}>
-
-        {/* Recherche */}
         <form method="GET" style={{ position: 'relative', maxWidth: 360 }}>
-          <Search size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} />
+          <Search
+            size={15}
+            style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }}
+          />
           <input
             name="q" type="text" className="input"
             defaultValue={q} placeholder="Rechercher un lot…"
@@ -163,7 +167,7 @@ export default async function CataloguePage({
         {/* Catégorie + disponibilité */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {[
-            { value: 'all', label: 'Toutes catégories' },
+            { value: 'all',        label: 'Toutes catégories' },
             ...Object.entries(CATEGORIE_LABELS).map(([v, l]) => ({ value: v, label: l })),
           ].map(({ value, label }) => {
             const active = categorie === value
@@ -172,12 +176,12 @@ export default async function CataloguePage({
                 key={value}
                 href={buildUrl({ categorie: value === 'all' ? undefined : value, page: '1' })}
                 style={{
-                  padding: '0.375rem 0.75rem', borderRadius: 9999,
-                  fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
-                  background: active ? 'var(--brand)' : 'white',
-                  color: active ? 'white' : 'var(--text-3)',
-                  border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)',
+                  padding: '0.25rem 0.625rem', borderRadius: 9999,
+                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
+                  background: active ? 'rgba(15,45,53,0.08)' : 'transparent',
+                  color: active ? 'var(--brand)' : 'var(--text-4)',
+                  border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
+                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
                 }}
               >
                 {label}
@@ -199,11 +203,11 @@ export default async function CataloguePage({
                 href={buildUrl({ disponible: value === 'all' ? undefined : value, page: '1' })}
                 style={{
                   padding: '0.25rem 0.625rem', borderRadius: 9999,
-                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
+                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
                   background: active ? 'rgba(15,45,53,0.08)' : 'transparent',
                   color: active ? 'var(--brand)' : 'var(--text-4)',
                   border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)',
+                  transition: 'all 150ms ease', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
                 }}
               >
                 {label}
@@ -222,8 +226,8 @@ export default async function CataloguePage({
         </div>
       ) : (
         <>
-          <div style={{ overflowX: 'auto' }}>
-            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 560 }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', minWidth: 720 }}>
 
               {/* Header */}
               <div style={{
@@ -279,27 +283,40 @@ export default async function CataloguePage({
                       transition: 'opacity 200ms ease',
                     }}
                   >
-                    {/* Nom + code + valeur */}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', textDecoration: lot.disponible ? 'none' : 'line-through' }}>
-                          {lot.nom}
-                        </span>
-                        {lot.mis_en_avant && <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>★</span>}
-                        {lot.valeur_ar && (
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-4)', fontWeight: 500 }}>
-                            {lot.valeur_ar.toLocaleString('fr-FR')} Ar
-                          </span>
+                    {/* Miniature + Nom + code */}
+                    <div style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: '0.375rem', flexShrink: 0,
+                        background: 'var(--bg-2)', overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {lot.photo_url ? (
+                          <img src={lot.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '1rem' }}>📦</span>
                         )}
                       </div>
-                      <span style={{
-                        display: 'inline-block', marginTop: '0.25rem',
-                        fontSize: '0.6875rem', fontFamily: 'monospace', fontWeight: 600,
-                        color: 'var(--text-4)', background: 'var(--bg-2)',
-                        padding: '0.1rem 0.375rem', borderRadius: '0.25rem', letterSpacing: '0.05em',
-                      }}>
-                        {(lot as any).code ?? '—'}
-                      </span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', textDecoration: lot.disponible ? 'none' : 'line-through' }}>
+                            {lot.nom}
+                          </span>
+                          {lot.mis_en_avant && <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>★</span>}
+                          {lot.valeur_ar && (
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-4)', fontWeight: 500 }}>
+                              {lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                            </span>
+                          )}
+                        </div>
+                        <span style={{
+                          display: 'inline-block', marginTop: '0.25rem',
+                          fontSize: '0.6875rem', fontFamily: 'monospace', fontWeight: 600,
+                          color: 'var(--text-4)', background: 'var(--bg-2)',
+                          padding: '0.1rem 0.375rem', borderRadius: '0.25rem', letterSpacing: '0.05em',
+                        }}>
+                          {(lot as any).code ?? '—'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Catégorie */}
@@ -313,7 +330,9 @@ export default async function CataloguePage({
 
                     {/* Stock */}
                     <span style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9375rem',
+                      display: 'block', textAlign: 'left',
+                      fontFamily: 'var(--font-display)', fontWeight: 700,
+                      fontSize: '0.9375rem',
                       color: lot.stock === 0 ? '#dc2626' : 'var(--text-1)',
                     }}>
                       {lot.stock}

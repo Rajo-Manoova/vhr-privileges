@@ -18,20 +18,22 @@ export async function addLot(
   const categorie   = formData.get('categorie') as string
   const stock       = parseInt(formData.get('stock') as string) || 1
   const valeur      = formData.get('valeur_ar') ? parseInt(formData.get('valeur_ar') as string) : null
+  const photo_url   = (formData.get('photo_url') as string)?.trim() || null
 
   if (!nom || !categorie)
     return { error: 'Nom et catégorie sont requis.' }
 
   const { error } = await supabase.from('lots').insert({
     nom, description, categorie, stock,
-    valeur_ar: valeur, disponible: true, mis_en_avant: false,
+    valeur_ar: valeur, photo_url,
+    disponible: true, mis_en_avant: false,
   })
 
   if (error) return { error: error.message }
 
   await logAction(
     'lot.created', 'lot', nom,
-    { data: { categorie, stock, valeur_ar: valeur } }
+    { data: { categorie, stock, valeur_ar: valeur, photo_url } }
   )
 
   revalidatePath('/catalogue')
@@ -49,18 +51,19 @@ export async function updateLot(
   const categorie   = formData.get('categorie') as string
   const stock       = parseInt(formData.get('stock') as string) || 0
   const valeur      = formData.get('valeur_ar') ? parseInt(formData.get('valeur_ar') as string) : null
+  const photo_url   = (formData.get('photo_url') as string)?.trim() || null
 
   if (!id || !nom || !categorie)
     return { error: 'Champs obligatoires manquants.' }
 
   const { data: current } = await supabase
     .from('lots')
-    .select('nom, categorie, stock, valeur_ar')
+    .select('nom, categorie, stock, valeur_ar, photo_url')
     .eq('id', id)
     .single()
 
   const { error } = await supabase.from('lots')
-    .update({ nom, description, categorie, stock, valeur_ar: valeur })
+    .update({ nom, description, categorie, stock, valeur_ar: valeur, photo_url })
     .eq('id', id)
 
   if (error) return { error: error.message }
@@ -68,13 +71,8 @@ export async function updateLot(
   await logAction(
     'lot.updated', 'lot', nom,
     {
-      before: {
-        nom:       current?.nom,
-        categorie: current?.categorie,
-        stock:     current?.stock,
-        valeur_ar: current?.valeur_ar,
-      },
-      after: { nom, categorie, stock, valeur_ar: valeur },
+      before: { nom: current?.nom, categorie: current?.categorie, stock: current?.stock, valeur_ar: current?.valeur_ar, photo_url: current?.photo_url },
+      after:  { nom, categorie, stock, valeur_ar: valeur, photo_url },
     },
     id
   )
