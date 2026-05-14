@@ -625,8 +625,9 @@ export default function TirageDetail({
         setAnimName(`${picked.prenom}${picked.nom ? ' ' + picked.nom : ''}`)
         stopSnd('tension')
         setPhase('winner')
-        setTimeout(() => playVictory(), 200)   // son victoire légèrement après l'apparition
-        setTimeout(() => setShowConfirmButtons(true), 900) // boutons après animation
+        setShowConfetti(true)                                // confettis dès l'apparition
+        setTimeout(() => playVictory(), 200)
+        setTimeout(() => setShowConfirmButtons(true), 900)
       }
     }
     timerRef.current = setTimeout(tick, delays[0])
@@ -703,18 +704,17 @@ export default function TirageDetail({
       sessionLotId: currentSL.id,
     }
     setWins(prev => [...prev, newWin])
-    setShowConfetti(true)
     const supabase = createClient()
     supabase.from('tirage_wins').insert({
       session_id: sessionId, session_lot_id: currentSL.id, member_id: winner.id,
     }).then(({ error }) => { if (error) console.error(error) })
-    // Retour au tableau après 3s (confettis visibles), arrêt de tous les sons
+    // Retour au tableau après 1.5s — confettis déjà actifs depuis la révélation
     setTimeout(() => {
       stopAllSounds()
       setShowConfetti(false); setWinner(null); setPhase('ready')
       setShowConfirmButtons(false)
       setProjectorView('tableau')
-    }, 3000)
+    }, 1500)
   }
 
   function skipLot() {
@@ -722,14 +722,14 @@ export default function TirageDetail({
     if (currentId) setSkippedIds(prev => new Set([...prev, currentId]))
     stopAllSounds()
     setWinner(null); setPhase('ready'); setCountdown(0)
-    setShowConfirmButtons(false)
+    setShowConfirmButtons(false); setShowConfetti(false)
     setProjectorView('tableau')
   }
 
   function returnToTableau() {
     stopAllSounds()
     setCountdown(0); setWinner(null); setPhase('ready')
-    setShowConfirmButtons(false)
+    setShowConfirmButtons(false); setShowConfetti(false)
     setProjectorView('tableau')
   }
 
