@@ -144,7 +144,7 @@ export default function InscriptionPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">Inscription</h1>
-        <p className="page-subtitle">Enregistrez un participant au Rallye VHR 2026.</p>
+        <p className="page-subtitle">Enregistrez un participant au Programme VHR Privilèges.</p>
       </div>
 
       <div style={{ maxWidth: 520 }}>

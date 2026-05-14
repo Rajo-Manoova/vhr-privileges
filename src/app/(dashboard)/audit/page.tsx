@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Pagination from '@/components/Pagination'
 import AuditRow from '@/components/AuditRow'
 
-const PER_PAGE = 25
+const PER_PAGE = 10
 
 export default async function AuditPage({
   searchParams,
@@ -82,7 +82,7 @@ export default async function AuditPage({
           {action !== 'all' && <input type="hidden" name="action" value={action} />}
         </form>
 
-        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', overflowX: 'auto', paddingBottom: '0.25rem' }}>
           {[
             { value: 'all',               label: 'Toutes'        },
             { value: 'member.created',    label: 'Inscriptions'  },

@@ -450,7 +450,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     display: 'flex', alignItems: 'center', gap: '0.625rem',
                     flexWrap: 'wrap', marginBottom: '0.25rem',
                   }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
                       {displayName}
                     </span>
                     <span style={{
@@ -488,7 +488,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0, flexWrap: 'wrap' }}>
                   <button
                     onClick={() => router.push(`/tirages/${session.id}`)}
                     style={{

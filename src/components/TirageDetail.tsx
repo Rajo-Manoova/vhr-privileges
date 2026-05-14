@@ -152,9 +152,10 @@ function LotsPanel({
     <div style={{
       background: dark ? 'rgba(255,255,255,0.05)' : 'white',
       border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'var(--border)'}`,
-      borderRadius: '0.875rem', overflow: 'hidden',
-      width: '100%', minWidth: 0, boxSizing: 'border-box' as const,
+      borderRadius: '0.875rem', width: '100%', minWidth: 0, boxSizing: 'border-box' as const,
     }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+      <div style={{ minWidth: 480 }}>
 
       {/* Header aligné sur la grille */}
       <div style={{
@@ -311,6 +312,8 @@ function LotsPanel({
             Aucun lot ajouté.
           </div>
         )}
+      </div>
+      </div>
       </div>
     </div>
   )
@@ -783,6 +786,15 @@ export default function TirageDetail({
     const isAllDone   = sortedLots.every(sl => wonIds.has(sl.id) || skippedIds.has(sl.id))
 
     const CSS = `
+      @media(max-width:768px){
+        .proj-title{font-size:clamp(0.9rem,3.5vw,1.25rem)!important;line-height:1.25!important}
+        .proj-win-name{font-size:clamp(2.5rem,8vw,5rem)!important}
+        .proj-left-panel{width:150px!important}
+        .proj-ready{flex-direction:column!important;align-items:center!important;gap:1.25rem!important}
+        .proj-ready-txt{text-align:center!important}
+        .proj-ready-img{width:min(55vw,220px)!important;height:min(55vw,220px)!important}
+        .proj-confirm-btns{grid-template-columns:1fr!important;max-width:320px!important}
+      }
       @keyframes cdIn  { 0%{transform:scale(0.2);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
       @keyframes winIn { 0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)} 65%{transform:scale(1.04);filter:blur(0)} 100%{transform:scale(1);opacity:1} }
       @keyframes photoIn { 0%{transform:scale(1.08);opacity:0} 100%{transform:scale(1);opacity:1} }
@@ -800,7 +812,7 @@ export default function TirageDetail({
           {/* Header */}
           <div style={{ padding: '1.25rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 3.5vw, 3rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: '0.375rem' }}>
+              <div className="proj-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 3.5vw, 3rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: '0.375rem' }}>
                 {displayName}
               </div>
               <div style={{ fontSize: '0.9375rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -941,7 +953,7 @@ export default function TirageDetail({
           </button>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.25rem, 2.5vw, 2rem)', color: 'white', letterSpacing: '-0.025em', lineHeight: 1 }}>
+            <div className="proj-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.25rem, 2.5vw, 2rem)', color: 'white', letterSpacing: '-0.025em', lineHeight: 1 }}>
               {displayName}
             </div>
             <div style={{ display: 'flex', gap: '3px', marginTop: '0.25rem', justifyContent: 'center' }}>
@@ -974,7 +986,7 @@ export default function TirageDetail({
           {phase === 'ready' && countdown === 0 && (() => {
             const imgSize = 'min(42vh, 420px)'
             return (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2rem, 5vw, 5rem)', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: 1100, margin: '0 auto' }}>
+              <div className="proj-ready" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2rem, 5vw, 5rem)', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: 1100, margin: '0 auto' }}>
                 {/* Image hero — gauche */}
                 <div style={{ flexShrink: 0 }}>
                   {currentLot?.lot?.photo_url ? (
@@ -986,7 +998,7 @@ export default function TirageDetail({
                   )}
                 </div>
                 {/* Texte + bouton — droite */}
-                <div style={{ flex: '1 1 280px', minWidth: 0, textAlign: 'left' }}>
+                <div className="proj-ready-txt" style={{ flex: '1 1 280px', minWidth: 0, textAlign: 'left' }}>
                   {/* Catégorie + Valeur */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1.25rem' }}>
                     {currentLot?.lot?.categorie && (
@@ -1051,7 +1063,7 @@ export default function TirageDetail({
                   )}
                 </div>
               )}
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9 }}>
+              <div className="proj-win-name" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9 }}>
                 {winner.prenom}
               </div>
               {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
