@@ -526,19 +526,22 @@ export default function TirageDetail({
   function startDraw() {
     if (countdown > 0) return
     snd('countdown', 7)
-    setCountdown(3)
-    timerRef.current = setTimeout(() => {
-      setCountdown(2)
+    // Délai 150ms pour laisser l'audio seeker avant l'animation visuelle
+    setTimeout(() => {
+      setCountdown(3)
       timerRef.current = setTimeout(() => {
-        setCountdown(1)
+        setCountdown(2)
         timerRef.current = setTimeout(() => {
-          setCountdown(0)
-          stopSnd('countdown')
-          snd('sweep')
-          setTimeout(() => { playDrumroll(); draw() }, 350)
-        }, 1000)
-      }, 1000)
-    }, 1000)
+          setCountdown(1)
+          timerRef.current = setTimeout(() => {
+            setCountdown(0)
+            stopSnd('countdown')
+            snd('sweep')
+            setTimeout(() => { playDrumroll(); draw() }, 300)
+          }, 950)
+        }, 950)
+      }, 950)
+    }, 150)
   }
 
   async function handleReorder(orderedIds: string[]) {
@@ -978,15 +981,36 @@ export default function TirageDetail({
               </div>
               {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
               {!winner.nom && <div style={{ marginBottom: '2rem' }} />}
-              <div style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={confirmWinDirect} style={{ padding: '1rem 2rem', borderRadius: '0.875rem', background: '#16a34a', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.25rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', boxShadow: '0 4px 24px rgba(22,163,74,0.4)' }}>
-                  <CheckCircle2 size={20} /> Confirmer présent
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.875rem', maxWidth: 660, margin: '0 auto', width: '100%' }}>
+                {/* Confirmer */}
+                <button
+                  onClick={confirmWinDirect}
+                  style={{ padding: '1rem 0.5rem', borderRadius: '0.875rem', background: '#16a34a', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(0.875rem, 1.6vw, 1.125rem)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 24px rgba(22,163,74,0.35)', transition: 'transform 100ms ease' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+                >
+                  <CheckCircle2 size={24} />
+                  Confirmer
                 </button>
-                <button onClick={() => draw(winner.id)} style={{ padding: '1rem 1.5rem', borderRadius: '0.875rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(0.875rem, 1.5vw, 1.1rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <RotateCcw size={16} /> Absent — re-tirer
+                {/* Re-tirer */}
+                <button
+                  onClick={() => { playDrumroll(); draw(winner.id) }}
+                  style={{ padding: '1rem 0.5rem', borderRadius: '0.875rem', background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.25)', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(0.875rem, 1.6vw, 1.125rem)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'transform 100ms ease' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+                >
+                  <RotateCcw size={24} />
+                  Re-tirer
                 </button>
-                <button onClick={skipLot} style={{ padding: '1rem 1.5rem', borderRadius: '0.875rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(0.75rem, 1.3vw, 0.95rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <ChevronRight size={15} /> Passer ce lot
+                {/* Passer */}
+                <button
+                  onClick={skipLot}
+                  style={{ padding: '1rem 0.5rem', borderRadius: '0.875rem', background: 'transparent', border: '1.5px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(0.875rem, 1.6vw, 1.125rem)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'transform 100ms ease' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+                >
+                  <ChevronRight size={24} />
+                  Passer
                 </button>
               </div>
             </div>
