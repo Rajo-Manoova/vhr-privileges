@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { logAction } from '@/lib/audit'
-import type { Etape } from '@/types'
+import type { Etape, Palier } from '@/types'
 
 export async function updateMember(
   _prev: { error?: string } | null,
@@ -17,21 +17,21 @@ export async function updateMember(
   const email    = (formData.get('email') as string)?.trim().toLowerCase()
   const whatsapp = (formData.get('whatsapp') as string)?.trim()
   const etape    = formData.get('etape') as Etape
+  const niveau   = formData.get('niveau') as Palier || 'membre'
   const notes    = (formData.get('notes') as string)?.trim() || null
 
   if (!id || !prenom || !email || !whatsapp || !etape)
     return { error: 'Tous les champs obligatoires sont requis.' }
 
-  // Récupérer les valeurs actuelles avant modification
   const { data: current } = await supabase
     .from('members')
-    .select('prenom, nom, email, whatsapp, etape, notes')
+    .select('prenom, nom, email, whatsapp, etape, niveau, notes')
     .eq('id', id)
     .single()
 
   const { error } = await supabase
     .from('members')
-    .update({ prenom, nom, email, whatsapp, etape, notes })
+    .update({ prenom, nom, email, whatsapp, etape, niveau, notes })
     .eq('id', id)
 
   if (error) {
@@ -44,13 +44,49 @@ export async function updateMember(
     `${prenom} ${nom ?? ''}`.trim(),
     {
       before: current ?? {},
-      after:  { prenom, nom, email, whatsapp, etape, notes },
+      after:  { prenom, nom, email, whatsapp, etape, niveau, notes },
     },
     id
   )
 
   revalidatePath('/membres')
   redirect('/membres')
+}
+
+export async function updateMemberNiveau(memberId: string, niveau: Palier) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { data: m } = await supabase
+    .from('members').select('prenom, nom, niveau').eq('id', memberId).single()
+
+  const { error } = await supabase
+    .from('members').update({ niveau }).eq('id', memberId)
+
+  if (error) return { error: error.message }
+
+  await logAction(
+    'member.niveau_updated', 'member',
+    m ? `${m.prenom} ${m.nom ?? ''}`.trim() : memberId,
+    { before: { niveau: m?.niveau }, after: { niveau } },
+    memberId
+  )
+
+  revalidatePath('/membres')
+  return { success: true }
+}
+
+export async function updateMemberCumulAr(memberId: string, cumul_ar: number) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('members').update({ cumul_ar }).eq('id', memberId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/membres')
+  return { success: true }
 }
 
 export async function resetMemberPin(memberId: string) {
@@ -96,10 +132,7 @@ export async function toggleMemberActif(memberId: string, actif: boolean) {
     actif ? 'member.activated' : 'member.deactivated',
     'member',
     m ? `${m.prenom} ${m.nom ?? ''}`.trim() : memberId,
-    {
-      before: { actif: !actif },
-      after:  { actif },
-    },
+    { before: { actif: !actif }, after: { actif } },
     memberId
   )
 

@@ -2,6 +2,7 @@ export type Role           = 'admin' | 'animateur' | 'membre'
 export type Etape          = '15_akoor_depart' | '15_faratsiho' | '16_ampefy' | '17_sakay' | '17_akoor_arrivee'
 export type Palier         = 'membre' | 'argent' | 'or' | 'vip'
 export type LotCategorie   = 'decouverte' | 'premium' | 'prestige' | 'grand_prix'
+export type LotPalier      = 'tirage' | 'argent' | 'or' | 'vip'
 export type TirageType     = 'ponctuel' | 'hebdomadaire' | 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel'
 export type TirageStatus   = 'pending' | 'active' | 'completed'
 export type LotStatus      = 'pending' | 'active' | 'confirmed' | 'redrawn'
@@ -13,6 +14,29 @@ export const ETAPE_LABELS: Record<Etape, string> = {
   '16_ampefy':        'Ampefy (16 Mai)',
   '17_sakay':         'Sakay (17 Mai)',
   '17_akoor_arrivee': 'Akoor — Arrivée (17 Mai)',
+}
+
+// ─── Paliers ────────────────────────────────────────────────────────────────
+
+export const PALIER_LABELS: Record<Palier, string> = {
+  membre: 'Membre',
+  argent: 'Argent',
+  or:     'Or',
+  vip:    'VIP',
+}
+
+export const PALIER_COLORS: Record<Palier, { bg: string; color: string; border: string }> = {
+  membre: { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
+  argent: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  or:     { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+  vip:    { bg: '#f3e8ff', color: '#6d28d9', border: '#ddd6fe' },
+}
+
+export const PALIER_EMOJI: Record<Palier, string> = {
+  membre: '⚪',
+  argent: '🥈',
+  or:     '🥇',
+  vip:    '💎',
 }
 
 export const PALIER_SEUILS: Record<Palier, number> = {
@@ -29,6 +53,24 @@ export const PALIER_CHANCES: Record<Palier, number> = {
   vip:     5,
 }
 
+// Palier minimum requis pour accéder à chaque catégorie de lot
+export const CATEGORIE_PALIER_MIN: Record<LotCategorie, Palier> = {
+  decouverte: 'membre',
+  premium:    'argent',
+  prestige:   'or',
+  grand_prix: 'vip',
+}
+
+// Ordre des paliers (pour comparaisons)
+export const PALIER_ORDER: Record<Palier, number> = {
+  membre: 0,
+  argent: 1,
+  or:     2,
+  vip:    3,
+}
+
+// ─── Lots ────────────────────────────────────────────────────────────────────
+
 export const CATEGORIE_LABELS: Record<LotCategorie, string> = {
   decouverte: 'Découverte',
   premium:    'Premium',
@@ -43,6 +85,15 @@ export const CATEGORIE_COLORS: Record<LotCategorie, { bg: string; color: string 
   grand_prix: { bg: '#ede9fe', color: '#5b21b6' },
 }
 
+export const PALIER_LOT_LABELS: Record<LotPalier, string> = {
+  tirage: 'Tirage',
+  argent: 'Argent',
+  or:     'Or',
+  vip:    'VIP',
+}
+
+// ─── Tirages ─────────────────────────────────────────────────────────────────
+
 export const TIRAGE_TYPE_LABELS: Record<TirageType, string> = {
   ponctuel:     'Ponctuel',
   hebdomadaire: 'Hebdomadaire',
@@ -52,6 +103,8 @@ export const TIRAGE_TYPE_LABELS: Record<TirageType, string> = {
   annuel:       'Annuel',
 }
 
+// ─── Interfaces ──────────────────────────────────────────────────────────────
+
 export interface Member {
   id: string
   prenom: string
@@ -59,6 +112,12 @@ export interface Member {
   email: string
   whatsapp: string
   etape: Etape
+  niveau: Palier          // ← nouveau
+  cumul_ar: number        // ← nouveau (0 par défaut, mis à jour par Odoo)
+  actif: boolean
+  notes?: string | null
+  pin?: string | null
+  pin_temp?: string | null
   created_at: string
   created_by?: string | null
 }
@@ -69,6 +128,7 @@ export interface Lot {
   nom: string
   description?: string | null
   categorie: LotCategorie
+  palier: LotPalier
   stock: number
   disponible: boolean
   mis_en_avant: boolean
@@ -87,6 +147,7 @@ export interface TirageSession {
   completed_at?: string | null
   created_by?: string | null
   created_at: string
+  eligibilite_override: boolean   // ← nouveau
 }
 
 export interface TirageTypeConfig {
@@ -128,8 +189,6 @@ export interface Commande {
 }
 
 export interface MemberWithStats extends Member {
-  cumul_ar: number
-  palier: Palier
   nb_commandes: number
   nb_wins: number
 }
