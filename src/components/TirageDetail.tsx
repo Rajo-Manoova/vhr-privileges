@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Play, RotateCcw, CheckCircle2, Maximize2, Minimize2,
+  Play, RotateCcw, CheckCircle2, Maximize2, Minimize2, ChevronLeft,
   Trophy, AlertCircle, ChevronRight, Users, ChevronDown, ChevronUp,
   Plus, Trash2, PackageOpen, Loader2, GripVertical, ArrowUp, ArrowDown, ArrowUpDown, Volume2, VolumeX,
 } from 'lucide-react'
@@ -411,7 +411,10 @@ export default function TirageDetail({
   const soundRefs    = useRef<Record<string, HTMLAudioElement>>({})
   const [countdown,    setCountdown]    = useState<number>(0)
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const [showConfetti, setShowConfetti] = useState(false)
+  const [showConfetti,  setShowConfetti]  = useState(false)
+  const [projectorView, setProjectorView] = useState<'tableau'|'animation'>('tableau')
+  const [tableauPage,   setTableauPage]   = useState(1)
+  const [skippedIds,    setSkippedIds]    = useState<Set<string>>(new Set())
   const confettiData = useState(() =>
     Array.from({ length: 60 }, (_, i) => ({
       left:  Math.round(Math.random() * 100),
@@ -649,6 +652,53 @@ export default function TirageDetail({
     }
   }
 
+  async function confirmWinDirect() {
+    if (!winner) return
+    const currentSL = sessionLots[lotIndex]
+    const newWin: Win = {
+      memberId:     winner.id,
+      memberName:   `${winner.prenom}${winner.nom ? ' ' + winner.nom : ''}`,
+      lotNom:       currentSL.lot?.nom ?? '',
+      sessionLotId: currentSL.id,
+    }
+    setWins(prev => [...prev, newWin])
+    stopSnd('drumroll-1'); stopSnd('drumroll-2'); stopSnd('drumroll-3')
+    playVictory()
+    setShowConfetti(true)
+    const supabase = createClient()
+    supabase.from('tirage_wins').insert({
+      session_id: sessionId, session_lot_id: currentSL.id, member_id: winner.id,
+    }).then(({ error }) => { if (error) console.error(error) })
+    // Retour au tableau après 3s (confettis visibles)
+    setTimeout(() => {
+      setShowConfetti(false); setWinner(null); setPhase('ready')
+      setProjectorView('tableau')
+    }, 3000)
+  }
+
+  function skipLot() {
+    const currentId = sessionLots[lotIndex]?.id
+    if (currentId) setSkippedIds(prev => new Set([...prev, currentId]))
+    stopSnd('drumroll-1'); stopSnd('drumroll-2'); stopSnd('drumroll-3')
+    setWinner(null); setPhase('ready'); setCountdown(0)
+    setProjectorView('tableau')
+  }
+
+  function returnToTableau() {
+    ['drumroll-1','drumroll-2','drumroll-3','countdown','tension'].forEach(k => stopSnd(k))
+    setCountdown(0); setWinner(null); setPhase('ready')
+    setProjectorView('tableau')
+  }
+
+  function skipFromTableau(lotId: string) {
+    setSkippedIds(prev => new Set([...prev, lotId]))
+  }
+
+  function handleDrawFromTableau(idx: number) {
+    setLotIndex(idx); setWinner(null); setPhase('ready'); setCountdown(0)
+    setProjectorView('animation')
+  }
+
   function toggleProjector() {
     if (!projector) {
       document.documentElement.requestFullscreen?.().catch(() => {})
@@ -676,201 +726,273 @@ export default function TirageDetail({
 
   /* ── Mode Projecteur ── */
   if (projector) {
-    const cc = currentLot?.lot?.categorie
-      ? CATEGORIE_COLORS[currentLot.lot.categorie] ?? { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }
-      : null
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0d1f2d', display: 'flex', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
-        <style>{`
-          @keyframes cdIn  { 0%{transform:scale(0.2);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-          @keyframes cdOut { 0%{transform:scale(1);opacity:1}   100%{transform:scale(2.5);opacity:0} }
-          @keyframes winIn { 0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)} 65%{transform:scale(1.04);filter:blur(0)} 100%{transform:scale(1);opacity:1} }
-          @keyframes photoIn { 0%{transform:scale(1.08);opacity:0} 100%{transform:scale(1);opacity:1} }
-          @keyframes confetti { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(105vh) rotate(900deg);opacity:0} }
-          @keyframes pulse { 0%,100%{opacity:0.15} 50%{opacity:0.35} }
-        `}</style>
+    const TABLEAU_PER_PAGE = 10
+    const sortedLots  = [...sessionLots].sort((a, b) => a.ordre - b.ordre)
+    const wonIds      = new Set(wins.map(w => w.sessionLotId))
+    const nextLotId   = sortedLots.find(sl => !wonIds.has(sl.id) && !skippedIds.has(sl.id))?.id
+    const totalPages  = Math.ceil(sortedLots.length / TABLEAU_PER_PAGE)
+    const pageSlice   = sortedLots.slice((tableauPage-1)*TABLEAU_PER_PAGE, tableauPage*TABLEAU_PER_PAGE)
+    const isAllDone   = sortedLots.every(sl => wonIds.has(sl.id) || skippedIds.has(sl.id))
 
-        {/* ── Panneau gauche — liste des lots ── */}
-        <div style={{ width: 190, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)', overflowY: 'auto' }}>
-          {/* Header + mute */}
-          <div style={{ padding: '1rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)' }}>
-              {sessionLots.length} lots
-            </span>
-            <button
-              onClick={() => setSoundEnabled(v => !v)}
-              title={soundEnabled ? 'Couper le son' : 'Activer le son'}
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.3rem 0.5rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-            >
-              {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+    const CSS = `
+      @keyframes cdIn  { 0%{transform:scale(0.2);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+      @keyframes winIn { 0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)} 65%{transform:scale(1.04);filter:blur(0)} 100%{transform:scale(1);opacity:1} }
+      @keyframes photoIn { 0%{transform:scale(1.08);opacity:0} 100%{transform:scale(1);opacity:1} }
+      @keyframes confetti { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(105vh) rotate(900deg);opacity:0} }
+      @keyframes pulse { 0%,100%{opacity:0.15} 50%{opacity:0.35} }
+      @keyframes rowIn { 0%{opacity:0;transform:translateX(-8px)} 100%{opacity:1;transform:none} }
+    `
+
+    /* ── TABLEAU VIEW ── */
+    if (projectorView === 'tableau') {
+      return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0d1f2d', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)' }}>
+          <style>{CSS}</style>
+
+          {/* Header */}
+          <div style={{ padding: '1rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '1.5rem', flexShrink: 0 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.3)', marginBottom: '0.25rem' }}>
+                {displayName}
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ color: '#4ade80', fontWeight: 700 }}>{wins.length} attribué{wins.length > 1 ? 's' : ''}</span>
+                {skippedIds.size > 0 && <span style={{ color: 'rgba(255,255,255,0.25)' }}>{skippedIds.size} passé{skippedIds.size > 1 ? 's' : ''}</span>}
+                <span>·</span>
+                <span>{sortedLots.length} lots</span>
+              </div>
+            </div>
+            {/* Progress pills */}
+            <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+              {sortedLots.map(sl => {
+                const won  = wonIds.has(sl.id)
+                const skip = skippedIds.has(sl.id)
+                const next = sl.id === nextLotId
+                return <div key={sl.id} style={{ width: 10, height: 10, borderRadius: '50%', background: won ? '#22c55e' : skip ? 'rgba(255,255,255,0.12)' : next ? 'var(--accent)' : 'rgba(255,255,255,0.18)', transition: 'all 300ms ease' }} />
+              })}
+            </div>
+            <button onClick={() => setSoundEnabled(v => !v)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', display: 'flex' }}>
+              {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            </button>
+            <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+              <Minimize2 size={15} />
             </button>
           </div>
 
-          {/* Lots list */}
-          {[...sessionLots].sort((a,b) => a.ordre - b.ordre).map((sl, i) => {
-            const won = wins.some(w => w.sessionLotId === sl.id)
-            const cur = i === lotIndex && phase !== 'completed'
-            const w   = wins.find(w => w.sessionLotId === sl.id)
-            return (
-              <div key={sl.id} style={{ padding: '0.625rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: cur ? 'rgba(255,255,255,0.07)' : 'transparent', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: won ? '#22c55e' : cur ? 'var(--accent)' : 'rgba(255,255,255,0.1)', fontSize: '0.5625rem', fontWeight: 700, color: won || cur ? 'white' : 'rgba(255,255,255,0.4)' }}>
-                  {won ? '✓' : sl.ordre}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.6875rem', fontWeight: cur ? 700 : 400, color: won ? 'rgba(255,255,255,0.25)' : cur ? 'white' : 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: won ? 'line-through' : 'none' }}>
-                    {sl.lot?.nom}
-                  </div>
-                  {won && w && (
-                    <div style={{ fontSize: '0.5625rem', color: '#4ade80', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🏆 {w.memberName}
+          {/* Table */}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {isAllDone ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem' }}>
+                <Trophy size={56} style={{ color: 'var(--accent)' }} />
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '2.5rem', color: 'white', letterSpacing: '-0.04em' }}>Tirage terminé !</div>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9375rem' }}>{wins.length} gagnant{wins.length > 1 ? 's' : ''} · {skippedIds.size} passé{skippedIds.size > 1 ? 's' : ''}</div>
+              </div>
+            ) : (
+              pageSlice.map((sl, i) => {
+                const win  = wins.find(w => w.sessionLotId === sl.id)
+                const skip = skippedIds.has(sl.id)
+                const isNext = sl.id === nextLotId
+                const cc = sl.lot?.categorie ? CATEGORIE_COLORS[sl.lot.categorie] ?? { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' } : null
+
+                return (
+                  <div key={sl.id} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 120px 120px 1fr', gap: '1rem', padding: '0.875rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: isNext ? 'rgba(255,255,255,0.035)' : 'transparent', alignItems: 'center', animation: `rowIn 0.3s ${i * 0.04}s ease both` }}>
+
+                    {/* Miniature ou numéro */}
+                    {sl.lot?.photo_url ? (
+                      <img src={sl.lot.photo_url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '0.5rem', opacity: win || skip ? 0.3 : 1, flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: '0.5rem', background: win ? 'rgba(34,197,94,0.1)' : skip ? 'rgba(255,255,255,0.04)' : isNext ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: win ? '#4ade80' : skip ? 'rgba(255,255,255,0.15)' : isNext ? 'var(--accent)' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                        {win ? '✓' : skip ? '—' : `#${sl.ordre}`}
+                      </div>
+                    )}
+
+                    {/* Nom */}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(0.875rem, 1.5vw, 1.125rem)', color: win || skip ? 'rgba(255,255,255,0.3)' : 'white', textDecoration: win ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sl.lot?.nom}
+                      </div>
                     </div>
-                  )}
+
+                    {/* Catégorie */}
+                    <div>
+                      {cc && sl.lot?.categorie && (
+                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' as const }}>
+                          {CATEGORIE_LABELS[sl.lot.categorie]}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Valeur */}
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' as const }}>
+                      {sl.lot?.valeur_ar ? `${sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar` : ''}
+                    </div>
+
+                    {/* Action */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.625rem' }}>
+                      {win ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <CheckCircle2 size={13} color="white" />
+                          </div>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(0.875rem, 1.8vw, 1.25rem)', color: '#4ade80', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                            {win.memberName}
+                          </span>
+                        </div>
+                      ) : skip ? (
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleDrawFromTableau(sessionLots.findIndex(s => s.id === sl.id))}
+                            style={{ padding: '0.5rem 1.25rem', borderRadius: '0.625rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' as const, boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none' }}
+                          >
+                            <Play size={13} /> Tirer
+                          </button>
+                          <button
+                            onClick={() => skipFromTableau(sl.id)}
+                            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.625rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' as const }}
+                          >
+                            Passer
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ padding: '0.875rem 2rem', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexShrink: 0 }}>
+              <button onClick={() => setTableauPage(p => Math.max(1, p-1))} disabled={tableauPage === 1} style={{ width: 32, height: 32, borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: tableauPage === 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)', cursor: tableauPage === 1 ? 'not-allowed' : 'pointer', fontSize: '1.125rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+              <span style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.35)' }}>Page {tableauPage} / {totalPages}</span>
+              <button onClick={() => setTableauPage(p => Math.min(totalPages, p+1))} disabled={tableauPage === totalPages} style={{ width: 32, height: 32, borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: tableauPage === totalPages ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)', cursor: tableauPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '1.125rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    /* ── ANIMATION VIEW ── */
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0d1f2d', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
+        <style>{CSS}</style>
+
+        {/* Barre du haut */}
+        <div style={{ padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <button
+            onClick={returnToTableau}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.4rem 0.875rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+          >
+            <ChevronLeft size={14} /> Tableau
+          </button>
+
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.5625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.25)' }}>
+              {displayName}
+            </div>
+            <div style={{ display: 'flex', gap: '3px', marginTop: '0.25rem', justifyContent: 'center' }}>
+              {sortedLots.map(sl => {
+                const won  = wonIds.has(sl.id)
+                const skip = skippedIds.has(sl.id)
+                const cur  = sl.id === sessionLots[lotIndex]?.id
+                return <div key={sl.id} style={{ width: cur ? 18 : 8, height: 6, borderRadius: 9999, background: won ? '#22c55e' : skip ? 'rgba(255,255,255,0.1)' : cur ? 'var(--accent)' : 'rgba(255,255,255,0.15)', transition: 'all 300ms ease' }} />
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => setSoundEnabled(v => !v)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', display: 'flex' }}>
+              {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            </button>
+            <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
+              <Minimize2 size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Zone principale */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: '2rem' }}>
+
+          {/* READY */}
+          {phase === 'ready' && countdown === 0 && (() => {
+            const cc = currentLot?.lot?.categorie ? CATEGORIE_COLORS[currentLot.lot.categorie] ?? null : null
+            return (
+              <div style={{ textAlign: 'center', maxWidth: 520 }}>
+                {currentLot?.lot?.photo_url ? (
+                  <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: 200, height: 200, objectFit: 'cover', borderRadius: '1.25rem', display: 'block', margin: '0 auto 1.5rem', animation: 'photoIn 0.5s ease both' }} />
+                ) : (
+                  <div style={{ width: 200, height: 200, borderRadius: '1.25rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                    <Trophy size={56} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.875rem' }}>
+                  {cc && currentLot?.lot?.categorie && <span style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}>{CATEGORIE_LABELS[currentLot.lot.categorie]}</span>}
+                  {currentLot?.lot?.valeur_ar && <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>{currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar</span>}
+                </div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '2rem' }}>
+                  {currentLot?.lot?.nom}
+                </div>
+                <button onClick={startDraw} style={{ padding: '1.125rem 2.75rem', borderRadius: '1rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1.1rem, 2.5vw, 1.625rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 40px rgba(217,119,6,0.35)' }}>
+                  <Play size={22} /> Tirer au sort
+                </button>
+                <div style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.2)', fontSize: '0.8125rem' }}>
+                  {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
                 </div>
               </div>
             )
-          })}
-        </div>
+          })()}
 
-        {/* ── Zone principale ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: '2rem' }}>
-
-          {/* Fermer */}
-          <button onClick={toggleProjector} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', zIndex: 20 }}>
-            <Minimize2 size={16} />
-          </button>
-
-          {/* Label session + progression */}
-          {phase !== 'completed' && (
-            <div style={{ position: 'absolute', top: '1.25rem', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: 5 }}>
-              <div style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.28)' }}>
-                {displayName}
-              </div>
-              {/* Barre de progression */}
-              <div style={{ display: 'flex', gap: '3px', marginTop: '0.5rem', justifyContent: 'center' }}>
-                {sessionLots.map((sl, i) => {
-                  const won = wins.some(w => w.sessionLotId === sl.id)
-                  return <div key={sl.id} style={{ width: i === lotIndex ? 20 : 8, height: 3, borderRadius: 9999, background: won ? '#22c55e' : i === lotIndex ? 'var(--accent)' : 'rgba(255,255,255,0.15)', transition: 'all 400ms ease' }} />
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── PHASE READY ── */}
-          {phase === 'ready' && countdown === 0 && (
-            <div style={{ textAlign: 'center', maxWidth: 520 }}>
-              {/* Photo du lot */}
-              {currentLot?.lot?.photo_url ? (
-                <img
-                  src={currentLot.lot.photo_url}
-                  alt={currentLot.lot?.nom}
-                  style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: '1.5rem', marginBottom: '1.75rem', display: 'block', margin: '0 auto 1.75rem', animation: 'photoIn 0.5s ease both' }}
-                />
-              ) : (
-                <div style={{ width: 220, height: 220, borderRadius: '1.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.75rem' }}>
-                  <Trophy size={64} style={{ color: 'rgba(255,255,255,0.15)' }} />
-                </div>
-              )}
-
-              {/* Catégorie + valeur */}
-              <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'center', alignItems: 'center', marginBottom: '1rem' }}>
-                {cc && currentLot?.lot?.categorie && (
-                  <span style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
-                    {CATEGORIE_LABELS[currentLot.lot.categorie]}
-                  </span>
-                )}
-                {currentLot?.lot?.valeur_ar && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
-                    {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
-                  </span>
-                )}
-              </div>
-
-              {/* Nom du lot */}
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '2.5rem' }}>
-                {currentLot?.lot?.nom}
-              </div>
-
-              {/* Bouton tirer au sort */}
-              <button
-                onClick={startDraw}
-                style={{ padding: '1.25rem 3rem', borderRadius: '1rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 40px rgba(217,119,6,0.35)' }}
-              >
-                <Play size={24} /> Tirer au sort
-              </button>
-
-              <div style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.8125rem' }}>
-                {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
-              </div>
-            </div>
-          )}
-
-          {/* ── COUNTDOWN overlay ── */}
+          {/* COUNTDOWN */}
           {countdown > 0 && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', zIndex: 15 }}>
               <div style={{ position: 'absolute', inset: 0, animation: 'pulse 0.5s ease-in-out infinite', background: 'radial-gradient(circle, rgba(217,119,6,0.15) 0%, transparent 70%)' }} />
-              <div
-                key={countdown}
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(10rem, 22vw, 16rem)', fontWeight: 900, color: 'white', lineHeight: 1, userSelect: 'none', zIndex: 1, animation: 'cdIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both', textShadow: '0 0 80px rgba(217,119,6,0.6)' }}
-              >
+              <div key={countdown} style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(10rem, 22vw, 16rem)', fontWeight: 900, color: 'white', lineHeight: 1, userSelect: 'none', zIndex: 1, animation: 'cdIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both', textShadow: '0 0 80px rgba(217,119,6,0.6)' }}>
                 {countdown}
               </div>
             </div>
           )}
 
-          {/* ── ANIMATING ── */}
+          {/* ANIMATING */}
           {phase === 'animating' && (
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center', padding: '0 2rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center' }}>
               {animName}
             </div>
           )}
 
-          {/* ── WINNER ── */}
+          {/* WINNER */}
           {phase === 'winner' && winner && (
             <div style={{ textAlign: 'center', width: '100%', position: 'relative', zIndex: 5, animation: 'winIn 0.75s cubic-bezier(0.34,1.56,0.64,1) both' }}>
-              {/* Photo en fond */}
               {currentLot?.lot?.photo_url && (
                 <div style={{ position: 'absolute', inset: -200, backgroundImage: `url(${currentLot.lot.photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06, filter: 'blur(40px)', zIndex: -1 }} />
               )}
-              {/* Petit label lot */}
               {currentLot?.lot?.nom && (
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: '1.5rem' }}>
                   🏆 {currentLot.lot.nom}
                 </div>
               )}
-              {/* Prénom */}
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9, textShadow: '0 0 60px rgba(255,255,255,0.08)' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9 }}>
                 {winner.prenom}
               </div>
-              {winner.nom && (
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>
-                  {winner.nom}
-                </div>
-              )}
+              {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
               {!winner.nom && <div style={{ marginBottom: '2rem' }} />}
-              <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => draw(winner.id)} />
-            </div>
-          )}
-
-          {/* ── COMPLETED ── */}
-          {phase === 'completed' && (
-            <div style={{ textAlign: 'center' }}>
-              <Trophy size={72} style={{ color: 'var(--accent)', display: 'block', margin: '0 auto 1.5rem' }} />
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', color: 'white', letterSpacing: '-0.04em', marginBottom: '2rem' }}>
-                Tirage terminé !
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 360, margin: '0 auto' }}>
-                {wins.map((w, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem 1rem', background: 'rgba(255,255,255,0.06)', borderRadius: '0.625rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4ade80' }}>#{i+1}</span>
-                    <span style={{ flex: 1, textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.memberName}</span>
-                    <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{w.lotNom}</span>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={confirmWinDirect} style={{ padding: '1rem 2rem', borderRadius: '0.875rem', background: '#16a34a', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.25rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', boxShadow: '0 4px 24px rgba(22,163,74,0.4)' }}>
+                  <CheckCircle2 size={20} /> Confirmer présent
+                </button>
+                <button onClick={() => draw(winner.id)} style={{ padding: '1rem 1.5rem', borderRadius: '0.875rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(0.875rem, 1.5vw, 1.1rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <RotateCcw size={16} /> Absent — re-tirer
+                </button>
+                <button onClick={skipLot} style={{ padding: '1rem 1.5rem', borderRadius: '0.875rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(0.75rem, 1.3vw, 0.95rem)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <ChevronRight size={15} /> Passer ce lot
+                </button>
               </div>
             </div>
           )}
 
-          {/* ── Confetti ── */}
+          {/* Confetti */}
           {showConfetti && (
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 20 }}>
               {confettiData.map((p, i) => (
@@ -931,7 +1053,7 @@ export default function TirageDetail({
                   Total : {totalValue.toLocaleString('fr-FR')} Ar
                   {budgetMax && (
                     <span style={{ fontWeight: 400, color: budgetOver ? '#dc2626' : 'var(--text-4)', marginLeft: '0.375rem' }}>
-                      / {budgetMax.toLocaleString('fr-FR')} Ar max
+                      / {budgetMax!.toLocaleString('fr-FR')} Ar max
                     </span>
                   )}
                 </span>
@@ -1123,13 +1245,21 @@ export default function TirageDetail({
             <div className="card animate-scale-in" style={{ padding: '1.75rem' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: 900, color: 'var(--brand)', letterSpacing: '-0.04em', marginBottom: '0.375rem' }}>
-                  {winner.prenom} {winner.nom ?? ''}
+                  {winner?.prenom} {winner?.nom ?? ''}
                 </div>
                 <div style={{ color: 'var(--text-4)', fontSize: '0.875rem' }}>
-                  {winner.email} · Niveau {PALIER_LABELS[(winner.niveau ?? 'membre') as Palier]}
+                  {winner?.email} · Niveau {PALIER_LABELS[((winner?.niveau ?? 'membre') as Palier)]}
                 </div>
               </div>
-              <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark={false} onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => draw(winner.id)} />
+              <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark={false} onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => winner && draw(winner.id)} />
+              <div style={{ textAlign: 'center', marginTop: '0.875rem' }}>
+                <button onClick={skipLot} style={{ background: 'none', border: 'none', color: 'var(--text-4)', fontSize: '0.8125rem', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', transition: 'all 150ms ease' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-2)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
+                >
+                  <ChevronRight size={13} /> Passer ce lot sans gagnant
+                </button>
+              </div>
             </div>
           )}
 
