@@ -136,6 +136,18 @@ function LotsPanel({
   }
   function handleDragEnd() { setDraggingId(null); setDragOverId(null) }
 
+  // Grid columns : [drag?] [num] [nom 1fr] [categorie 90px] [valeur 90px] [delete?]
+  const GRID = canDrag
+    ? '16px 28px 1fr 90px 82px 28px'
+    : onRemove
+    ? '28px 1fr 90px 82px 28px'
+    : '28px 1fr 90px 82px'
+
+  const hdrColor = (f: LotSortField) =>
+    sortField === f
+      ? dark ? 'rgba(255,255,255,0.85)' : 'var(--brand)'
+      : dark ? 'rgba(255,255,255,0.3)' : 'var(--text-4)'
+
   return (
     <div style={{
       background: dark ? 'rgba(255,255,255,0.05)' : 'white',
@@ -143,31 +155,38 @@ function LotsPanel({
       borderRadius: '0.875rem', overflow: 'hidden',
       width: '100%', minWidth: 0, boxSizing: 'border-box' as const,
     }}>
+
+      {/* Header aligné sur la grille */}
       <div style={{
-        padding: '0.875rem 1rem',
+        display: 'grid', gridTemplateColumns: GRID, gap: '0.5rem',
+        padding: '0.5rem 1rem',
         borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'var(--border)'}`,
         background: dark ? 'rgba(255,255,255,0.04)' : 'var(--bg-1)',
+        alignItems: 'center',
       }}>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: dark ? 'rgba(255,255,255,0.4)' : 'var(--text-4)' }}>
-            Lots ({sessionLots.length})
-          </span>
-          <span style={{ flex: 1 }} />
-          <SortBtn field="ordre"     sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
-          <SortBtn field="nom"       sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
-          <SortBtn field="categorie" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
-          <SortBtn field="valeur_ar" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
-        </div>
+        {canDrag && <span />}
+        {/* # */}
+        <SortBtn field="ordre" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+        {/* Lot */}
+        <SortBtn field="nom" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+        {/* Catégorie */}
+        <SortBtn field="categorie" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+        {/* Valeur */}
+        <SortBtn field="valeur_ar" sort={sortField} dir={sortDir} dark={dark} onSort={handleSort} />
+        {onRemove && <span />}
       </div>
 
       <div style={{ maxHeight: 480, overflowY: 'auto' }}>
         {sorted.map((sl, i) => {
-          const win       = wins.find(w => w.sessionLotId === sl.id)
-          const isCurrent = sessionLots.findIndex(s => s.id === sl.id) === lotIndex && phase !== 'completed'
-          const isDone    = !!win
-          const cc        = CATEGORIE_COLORS[sl.lot?.categorie as LotCategorie] ?? { bg: '#f0f7f8', color: '#2c6976' }
+          const win        = wins.find(w => w.sessionLotId === sl.id)
+          const origIdx    = sessionLots.findIndex(s => s.id === sl.id)
+          const isCurrent  = origIdx === lotIndex && phase !== 'completed'
+          const isDone     = !!win
+          const cc         = CATEGORIE_COLORS[sl.lot?.categorie as LotCategorie] ?? { bg: '#f0f7f8', color: '#2c6976' }
           const isDragging = draggingId === sl.id
           const isDragOver = dragOverId === sl.id && draggingId !== sl.id
+          // Numéro affiché : position visuelle si trié, ordre réel sinon
+          const displayNum = isDone ? '✓' : sortField === 'ordre' ? sl.ordre : i + 1
 
           return (
             <div
@@ -178,55 +197,53 @@ function LotsPanel({
               onDrop={canDrag ? e => handleDrop(e, sl.id) : undefined}
               onDragEnd={canDrag ? handleDragEnd : undefined}
               style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.625rem 1rem',
+                display: 'grid', gridTemplateColumns: GRID, gap: '0.5rem',
+                padding: '0.5rem 1rem', alignItems: 'center',
                 borderBottom: i < sorted.length - 1
                   ? `1px solid ${dark ? 'rgba(255,255,255,0.06)' : 'var(--border)'}` : 'none',
                 background: isDragOver
-                  ? dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,45,53,0.08)'
+                  ? dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,45,53,0.07)'
                   : isCurrent
-                  ? dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,45,53,0.05)' : 'transparent',
-                opacity: isDragging ? 0.4 : 1,
+                  ? dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,45,53,0.04)' : 'transparent',
+                opacity: isDragging ? 0.35 : 1,
                 cursor: canDrag && !isDone ? 'grab' : 'default',
-                transition: 'background 200ms ease, opacity 200ms ease',
-                borderTop: isDragOver ? `2px solid var(--brand)` : '2px solid transparent',
+                transition: 'background 150ms ease, opacity 150ms ease',
+                outline: isDragOver ? `2px solid var(--brand)` : 'none',
+                outlineOffset: '-2px',
               }}
             >
               {/* Drag handle */}
-              {canDrag && !isDone && (
-                <GripVertical size={14} style={{ color: dark ? 'rgba(255,255,255,0.2)' : 'var(--text-4)', flexShrink: 0, cursor: 'grab' }} />
+              {canDrag && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {!isDone && <GripVertical size={13} style={{ color: dark ? 'rgba(255,255,255,0.2)' : 'var(--text-4)', cursor: 'grab' }} />}
+                </div>
               )}
 
               {/* Numéro */}
               <div style={{
                 width: 26, height: 26, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
                 background: isDone ? '#dcfce7' : isCurrent ? 'var(--brand)' : dark ? 'rgba(255,255,255,0.08)' : 'var(--bg-2)',
                 color: isDone ? '#16a34a' : isCurrent ? 'white' : dark ? 'rgba(255,255,255,0.3)' : 'var(--text-4)',
                 fontSize: '0.6875rem', fontWeight: 700, transition: 'all 300ms ease',
               }}>
-                {isDone ? '✓' : sl.ordre}
+                {displayNum}
               </div>
 
-              {/* Nom + valeur + gagnant */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Nom + gagnant */}
+              <div style={{ minWidth: 0 }}>
                 <div style={{
-                  fontSize: '0.8125rem', fontWeight: isDone ? 500 : 600,
-                  color: isDone ? dark ? 'rgba(255,255,255,0.3)' : 'var(--text-4)'
+                  fontSize: '0.8125rem', fontWeight: isDone ? 400 : 600,
+                  color: isDone
+                    ? dark ? 'rgba(255,255,255,0.25)' : 'var(--text-4)'
                     : isCurrent ? dark ? 'white' : 'var(--text-1)'
-                    : dark ? 'rgba(255,255,255,0.5)' : 'var(--text-3)',
+                    : dark ? 'rgba(255,255,255,0.5)' : 'var(--text-2)',
                   textDecoration: isDone ? 'line-through' : 'none',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  transition: 'all 300ms ease',
+                  transition: 'color 300ms ease',
                 }}>
                   {sl.lot?.nom}
                 </div>
-                {sl.lot?.valeur_ar && (
-                  <div style={{ fontSize: '0.625rem', color: dark ? 'rgba(255,255,255,0.25)' : 'var(--text-4)', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-                    {sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar
-                  </div>
-                )}
                 {win && (
                   <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: dark ? '#4ade80' : '#16a34a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     🏆 {win.memberName}
@@ -240,31 +257,50 @@ function LotsPanel({
               </div>
 
               {/* Catégorie */}
-              {sl.lot?.categorie && (
-                <span style={{
-                  fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase' as const,
-                  letterSpacing: '0.05em', flexShrink: 0,
-                  color: dark ? 'rgba(255,255,255,0.25)' : cc.color,
-                }}>
-                  {CATEGORIE_LABELS[sl.lot.categorie] ?? sl.lot.categorie}
-                </span>
-              )}
+              <div>
+                {sl.lot?.categorie && (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '0.15rem 0.4rem', borderRadius: 9999,
+                    fontSize: '0.625rem', fontWeight: 700,
+                    background: dark ? 'transparent' : cc.bg,
+                    color: dark ? 'rgba(255,255,255,0.3)' : cc.color,
+                    border: dark ? `1px solid rgba(255,255,255,0.1)` : 'none',
+                    whiteSpace: 'nowrap' as const,
+                  }}>
+                    {CATEGORIE_LABELS[sl.lot.categorie] ?? sl.lot.categorie}
+                  </span>
+                )}
+              </div>
 
-              {/* Supprimer (uniquement si phase = ready et callback fourni) */}
-              {onRemove && phase === 'ready' && !isDone && (
-                <button
-                  onClick={() => onRemove(sl.id)}
-                  style={{
-                    width: 24, height: 24, borderRadius: '0.375rem', border: 'none',
-                    background: 'transparent', color: 'var(--text-4)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, transition: 'all 150ms ease',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fee2e2'; (e.currentTarget as HTMLElement).style.color = '#dc2626' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
-                >
-                  <Trash2 size={12} />
-                </button>
+              {/* Valeur */}
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-display)',
+                color: dark ? 'rgba(255,255,255,0.3)' : 'var(--text-3)',
+                whiteSpace: 'nowrap' as const, textAlign: 'right',
+              }}>
+                {sl.lot?.valeur_ar ? `${sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar` : '—'}
+              </div>
+
+              {/* Supprimer */}
+              {onRemove && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {phase === 'ready' && !isDone && (
+                    <button
+                      onClick={() => onRemove(sl.id)}
+                      style={{
+                        width: 24, height: 24, borderRadius: '0.375rem', border: 'none',
+                        background: 'transparent', color: 'var(--text-4)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 150ms ease',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fee2e2'; (e.currentTarget as HTMLElement).style.color = '#dc2626' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-4)' }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )
