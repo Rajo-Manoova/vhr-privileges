@@ -20,19 +20,18 @@ const TOTAL_SLIDES   = 5
 function fmt(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
 }
-
 function formatDate(iso: string | null): string {
   if (!iso) return 'ce soir'
   const d = new Date(iso)
-  const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const s = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 const PALIERS = [
-  { key: 'membre', label: 'Membre', chances: 1, desc: "Dès l'inscription",       initial: 'M', gradient: 'linear-gradient(135deg,#1e293b,#334155)',          border: 'rgba(148,163,184,0.28)', color: '#94a3b8', glow: 'rgba(148,163,184,0.12)', badge: '#334155' },
-  { key: 'argent', label: 'Argent', chances: 2, desc: 'À partir de 2 000 000 Ar', initial: 'A', gradient: 'linear-gradient(135deg,#1a2744,#1e3a5f)',           border: 'rgba(96,165,250,0.38)',  color: '#93c5fd', glow: 'rgba(96,165,250,0.14)',  badge: '#1e3a5f' },
-  { key: 'or',     label: 'Or',     chances: 3, desc: 'À partir de 5 000 000 Ar', initial: 'O', gradient: 'linear-gradient(135deg,#1c1400,#92400e)',           border: 'rgba(217,119,6,0.5)',   color: '#f59e0b', glow: 'rgba(217,119,6,0.18)',  badge: '#92400e' },
-  { key: 'vip',    label: 'VIP',    chances: 5, desc: 'À partir de 12 000 000 Ar',initial: 'V', gradient: 'linear-gradient(135deg,#0f0820,#4c1d95,#6d28d9)',   border: 'rgba(167,139,250,0.45)', color: '#c4b5fd', glow: 'rgba(167,139,250,0.18)', badge: '#4c1d95' },
+  { key:'membre', label:'Membre', chances:1, desc:"Dès l'inscription",        initial:'M', gradient:'linear-gradient(135deg,#1e293b,#334155)',          border:'rgba(148,163,184,0.28)', color:'#94a3b8', glow:'rgba(148,163,184,0.12)', badge:'#334155' },
+  { key:'argent', label:'Argent', chances:2, desc:'À partir de 2 000 000 Ar', initial:'A', gradient:'linear-gradient(135deg,#1a2744,#1e3a5f)',           border:'rgba(96,165,250,0.38)',  color:'#93c5fd', glow:'rgba(96,165,250,0.14)',  badge:'#1e3a5f' },
+  { key:'or',     label:'Or',     chances:3, desc:'À partir de 5 000 000 Ar', initial:'O', gradient:'linear-gradient(135deg,#1c1400,#92400e)',           border:'rgba(217,119,6,0.5)',   color:'#f59e0b', glow:'rgba(217,119,6,0.18)',  badge:'#92400e' },
+  { key:'vip',    label:'VIP',    chances:5, desc:'À partir de 12 000 000 Ar',initial:'V', gradient:'linear-gradient(135deg,#0f0820,#4c1d95,#6d28d9)',   border:'rgba(167,139,250,0.45)', color:'#c4b5fd', glow:'rgba(167,139,250,0.18)', badge:'#4c1d95' },
 ]
 
 const STARS = Array.from({ length: 60 }, () => ({
@@ -49,18 +48,13 @@ const CSS = `
 @keyframes glow    { 0%,100%{text-shadow:0 0 30px rgba(217,119,6,0.3)} 50%{text-shadow:0 0 70px rgba(217,119,6,0.65),0 0 120px rgba(217,119,6,0.2)} }
 @keyframes starP   { 0%,100%{opacity:0} 50%{opacity:1} }
 @keyframes progress{ from{width:0%} to{width:100%} }
-@media(max-width:768px){
+@media(max-width:640px){
   .sc-palier{grid-template-columns:1fr 1fr!important}
-  .sc-lots{grid-template-columns:repeat(3,1fr)!important}
-  .sc-act2{flex-direction:column!important;gap:1.25rem!important;align-items:center!important}
-  .sc-act2-img{width:min(65vw,260px)!important;height:min(65vw,260px)!important}
-  .sc-footer{gap:0.3rem!important;padding:0 0.5rem!important}
-  .sc-footer button,.sc-footer a{font-size:0.6875rem!important;padding:0.375rem 0.5rem!important}
-  .sc-s5-btns{flex-direction:column!important;align-items:stretch!important}
-  .sc-hdr-title{font-size:0.875rem!important}
-}
-@media(max-width:480px){
   .sc-lots{grid-template-columns:repeat(2,1fr)!important}
+  .sc-act2{flex-direction:column!important;gap:0.875rem!important;align-items:center!important}
+  .sc-hdr-title{font-size:0.75rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .sc-sub{display:none!important}
+  .sc-s5-btns{flex-direction:column!important;align-items:stretch!important}
 }
 `
 
@@ -88,7 +82,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
     if (paused) return
     if (tmr.current) clearTimeout(tmr.current)
     tmr.current = setTimeout(() => {
-      if (act===1) { if(slide<TOTAL_SLIDES-1) go(slide+1); else{setAct(2);gl(0)} }
+      if (act===1) { if(slide<TOTAL_SLIDES-1) go(slide+1); else{setAct(2);gl(0);setAk(k=>k+1)} }
       else gl((lotIdx+1) % Math.max(1,lots.length))
     }, act===1 ? SLIDE_DURATION : LOT_DURATION)
     return () => { if(tmr.current) clearTimeout(tmr.current) }
@@ -101,7 +95,9 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
   const evDate = formatDate(scheduledAt)
   const cc = (cat: LotCategorie|null) => cat==='grand_prix'?'#c4b5fd':cat==='prestige'?'#f59e0b':cat==='premium'?'#4ade80':'#64748b'
   const lot = lots[lotIdx]
+  const isLastSlide = act===1 && slide===TOTAL_SLIDES-1
 
+  /* ── Header ── */
   const Header = () => (
     <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20, background:'linear-gradient(to bottom,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
       <div style={{ display:'flex', alignItems:'center', padding:'0.75rem 1.25rem', gap:'0.5rem' }}>
@@ -125,17 +121,18 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
     </div>
   )
 
-
+  /* ── Footer ── */
   const Footer = () => {
     const btns = [
-      { label:'←',      longLabel:'← Préc.',    fn: prev,                          s: {} },
-      { label:'⟳',      longLabel:'⟳ Début',    fn: ()=>{setAct(1);go(0);setPaused(false)}, s: {} },
-      { label: paused ? '▶' : '⏸', longLabel: paused?'▶ Play':'⏸ Pause', fn:()=>setPaused(p=>!p), s: paused?{background:'rgba(217,119,6,0.2)',borderColor:'rgba(217,119,6,0.45)',color:'#D97706'}:{} },
-      { label: act===1&&slide===TOTAL_SLIDES-1 ? '🎁→' : '→', longLabel: act===1&&slide===TOTAL_SLIDES-1?'Lots →':'Suiv. →', fn: next, s: act===1&&slide===TOTAL_SLIDES-1?{background:'#D97706',border:'none',color:'white'}:{} },
+      { label:'←',  longLabel:'← Préc.',   fn: prev, s:{} as React.CSSProperties },
+      { label:'⟳',  longLabel:'⟳ Début',   fn: ()=>{setAct(1);go(0);setPaused(false)}, s:{} as React.CSSProperties },
+      { label: paused?'▶':'⏸', longLabel: paused?'▶ Play':'⏸', fn:()=>setPaused(p=>!p), s:(paused?{background:'rgba(217,119,6,0.2)',borderColor:'rgba(217,119,6,0.45)',color:'#D97706'}:{}) as React.CSSProperties },
+      { label: isLastSlide?'Lots→':'→', longLabel: isLastSlide?'Lots →':'Suiv. →', fn: next, s:(isLastSlide?{background:'#D97706',border:'none',color:'white'}:{}) as React.CSSProperties },
     ]
+    const btnBase: React.CSSProperties = { padding: isMobile ? '0.4rem 0.625rem' : '0.4rem 0.875rem', borderRadius:'0.5rem', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.75)', fontSize: isMobile ? '0.875rem' : '0.8125rem', fontWeight:600, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 150ms', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }
     return (
-      <div className="sc-footer" style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0.5rem 0.75rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.375rem', flexWrap:'nowrap', zIndex:20, background:'linear-gradient(to top,rgba(7,14,24,0.97) 0%,transparent 100%)' }}>
-        {/* Progress dots */}
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0.5rem 0.75rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.375rem', flexWrap:'nowrap', zIndex:20, background:'linear-gradient(to top,rgba(7,14,24,0.97) 0%,transparent 100%)' }}>
+        {/* Slide dots */}
         {act===1 && (
           <div style={{ display:'flex', gap:'0.25rem', marginRight:'0.25rem', flexShrink:0 }}>
             {Array.from({length:TOTAL_SLIDES}).map((_,i)=>(
@@ -143,42 +140,43 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             ))}
           </div>
         )}
+        {/* Lot counter instead of dots */}
         {act===2 && lots.length>1 && (
-          <div style={{ display:'flex', gap:'0.25rem', marginRight:'0.25rem', flexShrink:0 }}>
-            {lots.map((_,i)=>(
-              <button key={i} onClick={()=>{gl(i);setPaused(false)}} style={{ width:i===lotIdx?12:4, height:4, borderRadius:9999, background:i===lotIdx?'#D97706':'rgba(255,255,255,0.18)', border:'none', cursor:'pointer', transition:'all 250ms', padding:0, flexShrink:0 }} />
-            ))}
+          <div style={{ fontSize:'0.6875rem', fontWeight:700, color:'rgba(255,255,255,0.4)', fontFamily:'var(--font-display)', marginRight:'0.25rem', flexShrink:0, minWidth:28, textAlign:'center' }}>
+            {lotIdx+1}/{lots.length}
           </div>
         )}
         {btns.map((b,i)=>(
-          <button key={i} onClick={b.fn} style={{ padding: isMobile ? '0.4rem 0.625rem' : '0.4rem 0.875rem', borderRadius:'0.5rem', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.75)', fontSize: isMobile ? '0.875rem' : '0.8125rem', fontWeight:600, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 150ms', flexShrink:0, ...b.s }}>
-            {isMobile ? b.label : b.longLabel}
-          </button>
+          <button key={i} onClick={b.fn} style={{ ...btnBase, ...b.s }}>{isMobile ? b.label : b.longLabel}</button>
         ))}
-        <button onClick={exit} style={{ padding: isMobile ? '0.4rem 0.625rem' : '0.4rem 0.875rem', borderRadius:'0.5rem', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'rgba(239,68,68,0.7)', fontSize: isMobile ? '0.875rem' : '0.8125rem', fontWeight:600, cursor:'pointer', fontFamily:'var(--font-body)', flexShrink:0 }}>
+        <button onClick={exit} style={{ ...btnBase, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'rgba(239,68,68,0.7)' }}>
           {isMobile ? '✕' : '✕ Sortir'}
         </button>
       </div>
     )
   }
 
-    return (
+  /* ── Progress bar ── */
+  const ProgBar = () => (
+    <div style={{ position:'absolute', top:2, left:0, right:0, height:2, zIndex:30 }}>
+      <div key={`p-${act}-${slide}-${lotIdx}-${ak}`} style={{ height:'100%', background:'#D97706', animation:`progress ${act===1?SLIDE_DURATION:LOT_DURATION}ms linear both` }} />
+    </div>
+  )
+
+  return (
     <div style={{ position:'fixed', inset:0, background:'#070e18', fontFamily:'var(--font-body)', overflow:'hidden' }}>
       <style>{CSS}</style>
       {STARS.map((s,i)=>(
         <div key={i} style={{ position:'absolute', left:`${s.left}%`, top:`${s.top}%`, width:s.size, height:s.size, borderRadius:'50%', background:'white', opacity:0, animation:`starP ${s.dur}ms ${s.delay}ms ease-in-out infinite`, pointerEvents:'none' }} />
       ))}
-      {/* Progress */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, zIndex:30 }}>
-        <div key={`p-${act}-${slide}-${lotIdx}-${ak}`} style={{ height:'100%', background:'#D97706', animation:`progress ${act===1?SLIDE_DURATION:LOT_DURATION}ms linear both` }} />
-      </div>
-
+      <ProgBar />
       <Header />
 
       {/* ══ ACTE 1 ══ */}
       {act===1 && (
-        <div key={`s${slide}-${ak}`} style={{ position:'absolute', inset:0, display:'flex', alignItems:slide===3?'stretch':'center', justifyContent:'center', padding:`clamp(4rem,8vh,5.5rem) clamp(1.5rem,4vw,4rem) clamp(3.5rem,7vh,5rem)` }}>
+        <div key={`s${slide}-${ak}`} style={{ position:'absolute', inset:0, display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'center', padding: isMobile ? '4rem 1rem 3.5rem' : 'clamp(4rem,8vh,5.5rem) clamp(1.5rem,4vw,4rem) clamp(3.5rem,7vh,5rem)', overflowY:'auto' }}>
 
+          {/* Slide 0 — Hook */}
           {slide===0 && (
             <div style={{ textAlign:'center', width:'100%', maxWidth:800 }}>
               <div style={{ fontSize:'clamp(0.75rem,1.4vw,1rem)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.22em', color:'rgba(255,255,255,0.38)', marginBottom:'1rem', animation:'fadeUp 0.5s 0.1s ease both' }}>{evDate}</div>
@@ -199,6 +197,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
+          {/* Slide 1 — Cart'In */}
           {slide===1 && (
             <div style={{ maxWidth:960, width:'100%' }}>
               <div style={{ textAlign:'center', marginBottom:'clamp(1.25rem,2.5vh,2rem)', animation:'fadeUp 0.5s ease both' }}>
@@ -222,6 +221,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
+          {/* Slide 2 — VHR Privilèges */}
           {slide===2 && (
             <div style={{ maxWidth:1060, width:'100%' }}>
               <div style={{ textAlign:'center', marginBottom:'clamp(1rem,2.5vh,1.75rem)', animation:'fadeUp 0.5s ease both' }}>
@@ -251,38 +251,24 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
+          {/* Slide 3 — Lots */}
           {slide===3 && (
-            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.375rem,1vh,0.625rem)', minHeight:0, flex:'1 1 0', overflow:'hidden' }}>
-              {/* Title row */}
+            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)', minHeight:0, flex:'1 1 0', overflow:'hidden' }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', flexWrap:'wrap', flexShrink:0, animation:'fadeUp 0.4s ease both' }}>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1rem,2.5vw,1.75rem)', color:'white', letterSpacing:'-0.03em' }}>{lots.length} lots</span>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.8vw,1.25rem)', color:'#D97706' }}>{fmt(totalValue)} Ar de valeur totale</span>
               </div>
-              {/* Grid — fills remaining space exactly */}
-              <div
-                className="sc-lots"
-                style={{
-                  display:'grid',
-                  gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : `repeat(${Math.min(lots.length,5)},1fr)`,
-                  gridAutoRows:'1fr',
-                  gap:'clamp(0.3rem,0.6vw,0.5rem)',
-                  flex:'1 1 0',
-                  minHeight:0,
-                  overflow:'hidden',
-                }}
-              >
+              <div className="sc-lots" style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : `repeat(${Math.min(lots.length,5)},1fr)`, gridAutoRows:'1fr', gap:'clamp(0.3rem,0.6vw,0.5rem)', flex:'1 1 0', minHeight:0, overflow:'hidden' }}>
                 {lots.slice(0,10).map((l,i)=>(
                   <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', animation:`cardIn 0.35s ${i*0.05}s ease both`, minHeight:0 }}>
-                    {/* Image — contain so full product visible */}
                     <div style={{ flex:'1 1 0', minHeight:0, background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {l.photo_url ? (
-                        <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
-                      ) : (
-                        <span style={{ color:'rgba(0,0,0,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</span>
-                      )}
+                        <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}
+                          onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
+                      ) : null}
+                      <div style={{ display: l.photo_url ? 'none' : 'flex', width:'100%', height:'100%', background:'rgba(255,255,255,0.04)', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</div>
                     </div>
-                    {/* Text */}
-                    <div style={{ padding:'0.3rem 0.4rem', flexShrink:0, background:'rgba(255,255,255,0.04)' }}>
+                    <div style={{ padding:'0.3rem 0.4rem', flexShrink:0 }}>
                       <div style={{ fontSize:'clamp(0.4rem,0.7vw,0.5625rem)', fontWeight:700, color:cc(l.categorie), textTransform:'uppercase', letterSpacing:'0.05em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {l.categorie ? CATEGORIE_LABELS[l.categorie] : ''}
                       </div>
@@ -295,6 +281,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
+          {/* Slide 4 — CTA */}
           {slide===4 && (
             <div style={{ textAlign:'center', maxWidth:700, width:'100%', animation:'scaleIn 0.65s cubic-bezier(0.34,1.56,0.64,1) both' }}>
               <div style={{ width:'clamp(56px,7vw,72px)', height:'clamp(56px,7vw,72px)', borderRadius:'50%', background:'linear-gradient(135deg,#92400e,#D97706)', border:'2px solid rgba(217,119,6,0.45)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto clamp(0.875rem,2vh,1.375rem)', boxShadow:'0 0 40px rgba(217,119,6,0.3)', animation:'glow 2.5s ease-in-out infinite' }}>
@@ -307,11 +294,13 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
                 Demandez à votre animateur de vous inscrire maintenant.<br />
                 <span style={{ color:'#D97706', fontWeight:700 }}>C'est gratuit. C'est immédiat. Vous pouvez gagner.</span>
               </div>
-              <div className="sc-s5-btns" style={{ display:'flex', gap:'0.875rem', justifyContent:'center', flexWrap:'wrap', animation:'fadeUp 0.5s 0.45s ease both' }}>
-                <a href="/inscription" target="_blank" rel="noopener" style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'#D97706', color:'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'0.5rem', textDecoration:'none', boxShadow:'0 4px 24px rgba(217,119,6,0.4)' }}>
+              <div className="sc-s5-btns" style={{ display:'flex', gap:'0.875rem', justifyContent:'center', flexWrap:'wrap', animation:'fadeUp 0.5s 0.45s ease both', width:'100%' }}>
+                <a href="/inscription" target="_blank" rel="noopener"
+                  style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'#D97706', color:'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', textDecoration:'none', boxShadow:'0 4px 24px rgba(217,119,6,0.4)', width: isMobile ? '100%' : 'auto', boxSizing:'border-box' as const }}>
                   ✦ Inscrivez-vous maintenant
                 </a>
-                <button onClick={()=>{setAct(2);gl(0);setAk(k=>k+1)}} style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'rgba(255,255,255,0.08)', border:'1.5px solid rgba(255,255,255,0.18)', color:'white', fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'0.5rem' }}>
+                <button onClick={()=>{setAct(2);gl(0);setAk(k=>k+1)}}
+                  style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'rgba(255,255,255,0.08)', border:'1.5px solid rgba(255,255,255,0.18)', color:'white', fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', width: isMobile ? '100%' : 'auto', boxSizing:'border-box' as const }}>
                   Voir les lots →
                 </button>
               </div>
@@ -324,15 +313,16 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
       {act===2 && lot && (
         <div key={`lot-${lotIdx}-${ak}`} style={{ position:'absolute', inset:0 }}>
           {lot.photo_url && <div style={{ position:'absolute', inset:0, backgroundImage:`url(${lot.photo_url})`, backgroundSize:'cover', backgroundPosition:'center', opacity:0.07, filter:'blur(48px)', animation:'fadeIn 0.8s ease both' }} />}
-          <div className="sc-act2" style={{ position:'absolute', inset:0, display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'center', padding: isMobile ? '3.5rem 1.25rem 3.5rem' : 'clamp(4.5rem,9vh,6rem) clamp(1.5rem,5vw,5rem) clamp(4rem,8vh,5.5rem)', gap: isMobile ? '1rem' : 'clamp(2rem,5vw,5rem)', flexDirection: isMobile ? 'column' : 'row', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowY: isMobile ? 'auto' : 'visible' }}>
-            <div className="sc-act2-img" style={{ flexShrink:0, animation:'scaleIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+          <div className="sc-act2" style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', padding: isMobile ? '4.5rem 1.25rem 3.5rem' : 'clamp(4.5rem,9vh,6rem) clamp(1.5rem,5vw,5rem) clamp(4rem,8vh,5.5rem)', gap: isMobile ? '0.875rem' : 'clamp(2rem,5vw,5rem)', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowY: isMobile ? 'auto' : 'visible' }}>
+            <div style={{ flexShrink:0, animation:'scaleIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>
               {lot.photo_url ? (
-                <img src={lot.photo_url} alt={lot.nom} style={{ width: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', height: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', objectFit:'contain', borderRadius:'1.25rem', display:'block', boxShadow:'0 16px 48px rgba(0,0,0,0.5)', background:'white' }} />
+                <img src={lot.photo_url} alt={lot.nom}
+                  style={{ width: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', height: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', objectFit:'contain', borderRadius:'1.25rem', display:'block', boxShadow:'0 16px 48px rgba(0,0,0,0.5)', background:'white' }} />
               ) : (
-                <div style={{ width:'min(38vh,360px)', height:'min(38vh,360px)', borderRadius:'1.5rem', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontSize:'4rem', color:'rgba(255,255,255,0.12)', fontWeight:900 }}>✦</div>
+                <div style={{ width: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', height: isMobile ? 'min(55vw,220px)' : 'min(38vh,360px)', borderRadius:'1.25rem', background:'rgba(255,255,255,0.06)', border:'1.5px solid rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontSize:'3rem', color:'rgba(255,255,255,0.25)', fontWeight:900 }}>✦</div>
               )}
             </div>
-            <div style={{ flex:'1 1 260px', minWidth:0, animation:'fadeUp 0.5s 0.2s ease both' }}>
+            <div style={{ flex:'1 1 260px', minWidth:0, animation:'fadeUp 0.5s 0.2s ease both', textAlign: isMobile ? 'center' : 'left' }}>
               <div style={{ fontSize:'clamp(0.5625rem,0.9vw,0.75rem)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'rgba(255,255,255,0.28)', marginBottom:'0.625rem' }}>Lot {lot.ordre} / {lots.length}</div>
               {lot.categorie && (
                 <span style={{ display:'inline-block', padding:'0.275rem 0.875rem', borderRadius:9999, fontSize:'clamp(0.5625rem,0.9vw,0.75rem)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', background:`${cc(lot.categorie)}1a`, border:`1px solid ${cc(lot.categorie)}55`, color:cc(lot.categorie), marginBottom:'0.75rem' }}>
