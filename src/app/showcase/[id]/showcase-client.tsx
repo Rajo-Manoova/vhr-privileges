@@ -98,15 +98,19 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
   const Header = () => (
     <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20, background:'linear-gradient(to bottom,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
       <div style={{ display:'flex', alignItems:'center', padding:'0.75rem 1.25rem', gap:'0.5rem' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.625rem', flexShrink:0 }}>
+          {/* Cart'In logo */}
           <img src="/logo-cartin.png" alt="Cart'In"
             style={{ height:28, width:'auto', borderRadius:'0.3rem', flexShrink:0 }}
             onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
           <div style={{ display:'none', width:28, height:28, borderRadius:'0.4rem', background:'#D97706', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontWeight:900, fontSize:'0.75rem', color:'white', flexShrink:0 }}>C</div>
-          <div>
-            <div style={{ fontSize:'0.5625rem', fontWeight:800, color:'white', letterSpacing:'0.1em', whiteSpace:'nowrap' }}>CART'IN</div>
-            <div className="sc-sub" style={{ fontSize:'0.375rem', fontWeight:600, color:'rgba(255,255,255,0.3)', textTransform:'uppercase' as const, letterSpacing:'0.12em', whiteSpace:'nowrap' }}>VHR Privilèges</div>
-          </div>
+          {/* Separator */}
+          <div style={{ width:1, height:20, background:'rgba(255,255,255,0.2)', flexShrink:0 }} />
+          {/* VHR logo */}
+          <img src="/logo-vhr.png" alt="VHR"
+            style={{ height:28, width:'auto', flexShrink:0 }}
+            onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='block' }} />
+          <span style={{ display:'none', fontSize:'0.5625rem', fontWeight:800, color:'rgba(255,255,255,0.5)', letterSpacing:'0.1em', whiteSpace:'nowrap' }}>VHR</span>
         </div>
         <div className="sc-hdr-title" style={{ flex:1, fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.75rem,2vw,1.25rem)', color:'white', letterSpacing:'-0.02em', textAlign:'center', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', padding:'0 0.5rem' }}>
           {sessionLabel}
