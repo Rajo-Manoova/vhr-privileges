@@ -16,7 +16,7 @@ export default async function ShowcasePage({
   // Public — no auth check
   const { data: session } = await supabase
     .from('tirage_sessions')
-    .select('id, label, type, status')
+    .select('id, label, type, status, scheduled_at')
     .eq('id', id)
     .single()
 
@@ -52,6 +52,7 @@ export default async function ShowcasePage({
       lots={lots}
       totalValue={totalValue}
       nbMembres={nbMembres}
+      scheduledAt={session.scheduled_at ?? null}
     />
   )
 }
