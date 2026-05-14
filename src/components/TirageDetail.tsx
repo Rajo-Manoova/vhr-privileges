@@ -411,7 +411,8 @@ export default function TirageDetail({
   const soundRefs    = useRef<Record<string, HTMLAudioElement>>({})
   const [countdown,    setCountdown]    = useState<number>(0)
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const [showConfetti,  setShowConfetti]  = useState(false)
+  const [showConfetti,       setShowConfetti]       = useState(false)
+  const [showConfirmButtons, setShowConfirmButtons] = useState(false)
   const [projectorView, setProjectorView] = useState<'tableau'|'animation'>('tableau')
   const [tableauPage,   setTableauPage]   = useState(1)
   const [skippedIds,    setSkippedIds]    = useState<Set<string>>(new Set())
@@ -522,25 +523,30 @@ export default function TirageDetail({
   }
   function playDrumroll() { snd(`drumroll-${Math.floor(Math.random() * 3) + 1}`) }
   function playVictory()  { snd(Math.random() < 0.6 ? 'victory-big' : 'victory-chime') }
+  function stopAllSounds() { Object.keys(soundRefs.current).forEach(k => stopSnd(k)) }
 
   function startDraw() {
     if (countdown > 0) return
-    snd('countdown', 7)
-    // Délai 150ms pour laisser l'audio seeker avant l'animation visuelle
+    snd('countdown', 5)           // 5 dernières secondes du fichier 10s
     setTimeout(() => {
-      setCountdown(3)
-      timerRef.current = setTimeout(() => {
-        setCountdown(2)
+      setCountdown(5)
+      const step = (n: number) => {
         timerRef.current = setTimeout(() => {
-          setCountdown(1)
-          timerRef.current = setTimeout(() => {
+          if (n > 1) { setCountdown(n - 1); step(n - 1) }
+          else {
             setCountdown(0)
             stopSnd('countdown')
             snd('sweep')
-            setTimeout(() => { playDrumroll(); draw() }, 300)
-          }, 950)
+            setTimeout(() => {
+              const t = soundRefs.current['tension']
+              if (t) t.loop = true
+              snd('tension')
+              draw()
+            }, 300)
+          }
         }, 950)
-      }, 950)
+      }
+      step(5)
     }, 150)
   }
 
@@ -599,9 +605,9 @@ export default function TirageDetail({
     setError(null)
 
     const delays = [
-      ...Array(28).fill(55), ...Array(12).fill(100),
-      ...Array(8).fill(190), ...Array(5).fill(360),
-      ...Array(3).fill(580), 900,
+      ...Array(45).fill(18), ...Array(18).fill(38),
+      ...Array(12).fill(70), ...Array(8).fill(140),
+      ...Array(5).fill(260), ...Array(3).fill(430), 650,
     ]
     let step = 0
 
@@ -612,7 +618,10 @@ export default function TirageDetail({
         timerRef.current = setTimeout(tick, delays[step])
       } else {
         setAnimName(`${picked.prenom}${picked.nom ? ' ' + picked.nom : ''}`)
+        stopSnd('tension')
         setPhase('winner')
+        setTimeout(() => playVictory(), 200)   // son victoire légèrement après l'apparition
+        setTimeout(() => setShowConfirmButtons(true), 900) // boutons après animation
       }
     }
     timerRef.current = setTimeout(tick, delays[0])
@@ -665,16 +674,16 @@ export default function TirageDetail({
       sessionLotId: currentSL.id,
     }
     setWins(prev => [...prev, newWin])
-    stopSnd('drumroll-1'); stopSnd('drumroll-2'); stopSnd('drumroll-3')
-    playVictory()
     setShowConfetti(true)
     const supabase = createClient()
     supabase.from('tirage_wins').insert({
       session_id: sessionId, session_lot_id: currentSL.id, member_id: winner.id,
     }).then(({ error }) => { if (error) console.error(error) })
-    // Retour au tableau après 3s (confettis visibles)
+    // Retour au tableau après 3s (confettis visibles), arrêt de tous les sons
     setTimeout(() => {
+      stopAllSounds()
       setShowConfetti(false); setWinner(null); setPhase('ready')
+      setShowConfirmButtons(false)
       setProjectorView('tableau')
     }, 3000)
   }
@@ -682,14 +691,16 @@ export default function TirageDetail({
   function skipLot() {
     const currentId = sessionLots[lotIndex]?.id
     if (currentId) setSkippedIds(prev => new Set([...prev, currentId]))
-    stopSnd('drumroll-1'); stopSnd('drumroll-2'); stopSnd('drumroll-3')
+    stopAllSounds()
     setWinner(null); setPhase('ready'); setCountdown(0)
+    setShowConfirmButtons(false)
     setProjectorView('tableau')
   }
 
   function returnToTableau() {
-    ['drumroll-1','drumroll-2','drumroll-3','countdown','tension'].forEach(k => stopSnd(k))
+    stopAllSounds()
     setCountdown(0); setWinner(null); setPhase('ready')
+    setShowConfirmButtons(false)
     setProjectorView('tableau')
   }
 
@@ -707,10 +718,15 @@ export default function TirageDetail({
       document.documentElement.requestFullscreen?.().catch(() => {})
       setProjector(true)
     } else {
+      stopAllSounds()
       document.exitFullscreen?.().catch(() => {})
       setProjector(false)
     }
   }
+
+  useEffect(() => {
+    return () => { stopAllSounds() }
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -981,7 +997,7 @@ export default function TirageDetail({
               </div>
               {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
               {!winner.nom && <div style={{ marginBottom: '2rem' }} />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.875rem', maxWidth: 660, margin: '0 auto', width: '100%' }}>
+              {showConfirmButtons && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.875rem', maxWidth: 660, margin: '0 auto', width: '100%', animation: 'rowIn 0.4s ease both' }}>
                 {/* Confirmer */}
                 <button
                   onClick={confirmWinDirect}
@@ -1012,7 +1028,7 @@ export default function TirageDetail({
                   <ChevronRight size={24} />
                   Passer
                 </button>
-              </div>
+              </div>}
             </div>
           )}
 
