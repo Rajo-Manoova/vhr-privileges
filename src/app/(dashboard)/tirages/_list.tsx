@@ -304,6 +304,11 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                     </button>
                   ))}
                 </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-4)', marginTop: '0.375rem', lineHeight: 1.5 }}>
+                  {maxWins === 0
+                    ? 'Un gagnant ne peut plus être tiré lors des lots suivants.'
+                    : `Un gagnant peut gagner jusqu'à ${maxWins + 1} lot${maxWins > 0 ? 's' : ''} au total.`}
+                </p>
               </div>
 
               <div style={{ display: 'flex', gap: '0.625rem' }}>

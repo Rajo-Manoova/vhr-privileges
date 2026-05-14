@@ -976,16 +976,41 @@ export default function TirageDetail({
                       ) : skip ? (
                         <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
                       ) : (
-                        <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        <div style={{ display: 'flex', gap: '0.375rem' }}>
                           <button
                             onClick={() => handleDrawFromTableau(sessionLots.findIndex(s => s.id === sl.id))}
-                            style={{ padding: isMobile ? '0.5rem 0.625rem' : '0.625rem 0', width: isMobile ? 'auto' : '100%', borderRadius: '0.5rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: isMobile ? '0.75rem' : '0.9375rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none', whiteSpace: 'nowrap' as const }}
+                            style={{
+                              padding: isMobile ? '0.4rem 0.5rem' : '0.625rem 1.25rem',
+                              borderRadius: '0.5rem',
+                              background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                              border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                              color: 'white',
+                              fontSize: isMobile ? '0.75rem' : '0.9375rem',
+                              fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              gap: '0.375rem',
+                              boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none',
+                              whiteSpace: 'nowrap' as const,
+                              minWidth: isMobile ? 'auto' : 80,
+                            }}
                           >
-                            <Play size={isMobile ? 11 : 14} /> {isMobile ? '' : 'Tirer'}
+                            <Play size={isMobile ? 11 : 14} />
+                            {isMobile ? '' : 'Tirer'}
                           </button>
                           <button
                             onClick={() => skipFromTableau(sl.id)}
-                            style={{ padding: isMobile ? '0.5rem 0.5rem' : '0.625rem 0', width: isMobile ? 'auto' : '100%', borderRadius: '0.5rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: isMobile ? '0.625rem' : '0.9375rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' as const }}
+                            style={{
+                              padding: isMobile ? '0.4rem 0.4rem' : '0.625rem 1rem',
+                              borderRadius: '0.5rem',
+                              background: 'transparent',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              color: 'rgba(255,255,255,0.35)',
+                              fontSize: isMobile ? '0.625rem' : '0.9375rem',
+                              fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-display)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              whiteSpace: 'nowrap' as const,
+                              minWidth: isMobile ? 'auto' : 72,
+                            }}
                           >
                             {isMobile ? '→' : 'Passer'}
                           </button>
