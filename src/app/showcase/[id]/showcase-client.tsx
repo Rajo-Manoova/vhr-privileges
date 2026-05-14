@@ -45,13 +45,11 @@ const CSS = `
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
 @keyframes scaleIn { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
 @keyframes cardIn  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
-@keyframes glow    { 0%,100%{text-shadow:0 0 30px rgba(217,119,6,0.3)} 50%{text-shadow:0 0 70px rgba(217,119,6,0.65),0 0 120px rgba(217,119,6,0.2)} }
+@keyframes glow    { 0%,100%{text-shadow:0 0 30px rgba(217,119,6,0.3)} 50%{text-shadow:0 0 70px rgba(217,119,6,0.65)} }
 @keyframes starP   { 0%,100%{opacity:0} 50%{opacity:1} }
 @keyframes progress{ from{width:0%} to{width:100%} }
 @media(max-width:640px){
   .sc-palier{grid-template-columns:1fr 1fr!important}
-  .sc-lots{grid-template-columns:repeat(2,1fr)!important}
-  .sc-act2{flex-direction:column!important;gap:0.875rem!important;align-items:center!important}
   .sc-hdr-title{font-size:0.75rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
   .sc-sub{display:none!important}
   .sc-s5-btns{flex-direction:column!important;align-items:stretch!important}
@@ -97,7 +95,6 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
   const lot = lots[lotIdx]
   const isLastSlide = act===1 && slide===TOTAL_SLIDES-1
 
-  /* ── Header ── */
   const Header = () => (
     <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20, background:'linear-gradient(to bottom,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
       <div style={{ display:'flex', alignItems:'center', padding:'0.75rem 1.25rem', gap:'0.5rem' }}>
@@ -121,18 +118,16 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
     </div>
   )
 
-  /* ── Footer ── */
   const Footer = () => {
-    const btns = [
-      { label:'←',  longLabel:'← Préc.',   fn: prev, s:{} as React.CSSProperties },
-      { label:'⟳',  longLabel:'⟳ Début',   fn: ()=>{setAct(1);go(0);setPaused(false)}, s:{} as React.CSSProperties },
-      { label: paused?'▶':'⏸', longLabel: paused?'▶ Play':'⏸', fn:()=>setPaused(p=>!p), s:(paused?{background:'rgba(217,119,6,0.2)',borderColor:'rgba(217,119,6,0.45)',color:'#D97706'}:{}) as React.CSSProperties },
-      { label: isLastSlide?'Lots→':'→', longLabel: isLastSlide?'Lots →':'Suiv. →', fn: next, s:(isLastSlide?{background:'#D97706',border:'none',color:'white'}:{}) as React.CSSProperties },
-    ]
     const btnBase: React.CSSProperties = { padding: isMobile ? '0.4rem 0.625rem' : '0.4rem 0.875rem', borderRadius:'0.5rem', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.75)', fontSize: isMobile ? '0.875rem' : '0.8125rem', fontWeight:600, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 150ms', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }
+    const btns = [
+      { l:'←', ll:'← Préc.',  fn:prev, s:{} as React.CSSProperties },
+      { l:'⟳', ll:'⟳ Début',  fn:()=>{setAct(1);go(0);setPaused(false)}, s:{} as React.CSSProperties },
+      { l:paused?'▶':'⏸', ll:paused?'▶ Play':'⏸', fn:()=>setPaused(p=>!p), s:(paused?{background:'rgba(217,119,6,0.2)',borderColor:'rgba(217,119,6,0.45)',color:'#D97706'}:{}) as React.CSSProperties },
+      { l:isLastSlide?'Lots→':'→', ll:isLastSlide?'Lots →':'Suiv. →', fn:next, s:(isLastSlide?{background:'#D97706',border:'none',color:'white'}:{}) as React.CSSProperties },
+    ]
     return (
       <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0.5rem 0.75rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.375rem', flexWrap:'nowrap', zIndex:20, background:'linear-gradient(to top,rgba(7,14,24,0.97) 0%,transparent 100%)' }}>
-        {/* Slide dots */}
         {act===1 && (
           <div style={{ display:'flex', gap:'0.25rem', marginRight:'0.25rem', flexShrink:0 }}>
             {Array.from({length:TOTAL_SLIDES}).map((_,i)=>(
@@ -140,14 +135,13 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             ))}
           </div>
         )}
-        {/* Lot counter instead of dots */}
         {act===2 && lots.length>1 && (
           <div style={{ fontSize:'0.6875rem', fontWeight:700, color:'rgba(255,255,255,0.4)', fontFamily:'var(--font-display)', marginRight:'0.25rem', flexShrink:0, minWidth:28, textAlign:'center' }}>
             {lotIdx+1}/{lots.length}
           </div>
         )}
         {btns.map((b,i)=>(
-          <button key={i} onClick={b.fn} style={{ ...btnBase, ...b.s }}>{isMobile ? b.label : b.longLabel}</button>
+          <button key={i} onClick={b.fn} style={{ ...btnBase, ...b.s }}>{isMobile ? b.l : b.ll}</button>
         ))}
         <button onClick={exit} style={{ ...btnBase, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'rgba(239,68,68,0.7)' }}>
           {isMobile ? '✕' : '✕ Sortir'}
@@ -156,27 +150,24 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
     )
   }
 
-  /* ── Progress bar ── */
-  const ProgBar = () => (
-    <div style={{ position:'absolute', top:2, left:0, right:0, height:2, zIndex:30 }}>
-      <div key={`p-${act}-${slide}-${lotIdx}-${ak}`} style={{ height:'100%', background:'#D97706', animation:`progress ${act===1?SLIDE_DURATION:LOT_DURATION}ms linear both` }} />
-    </div>
-  )
-
   return (
     <div style={{ position:'fixed', inset:0, background:'#070e18', fontFamily:'var(--font-body)', overflow:'hidden' }}>
       <style>{CSS}</style>
       {STARS.map((s,i)=>(
         <div key={i} style={{ position:'absolute', left:`${s.left}%`, top:`${s.top}%`, width:s.size, height:s.size, borderRadius:'50%', background:'white', opacity:0, animation:`starP ${s.dur}ms ${s.delay}ms ease-in-out infinite`, pointerEvents:'none' }} />
       ))}
-      <ProgBar />
+      {/* Progress */}
+      <div style={{ position:'absolute', top:2, left:0, right:0, height:2, zIndex:30 }}>
+        <div key={`p-${act}-${slide}-${lotIdx}-${ak}`} style={{ height:'100%', background:'#D97706', animation:`progress ${act===1?SLIDE_DURATION:LOT_DURATION}ms linear both` }} />
+      </div>
+
       <Header />
 
       {/* ══ ACTE 1 ══ */}
       {act===1 && (
         <div key={`s${slide}-${ak}`} style={{ position:'absolute', inset:0, display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'center', padding: isMobile ? '4rem 1rem 3.5rem' : 'clamp(4rem,8vh,5.5rem) clamp(1.5rem,4vw,4rem) clamp(3.5rem,7vh,5rem)', overflowY:'auto' }}>
 
-          {/* Slide 0 — Hook */}
+          {/* Slide 0 */}
           {slide===0 && (
             <div style={{ textAlign:'center', width:'100%', maxWidth:800 }}>
               <div style={{ fontSize:'clamp(0.75rem,1.4vw,1rem)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.22em', color:'rgba(255,255,255,0.38)', marginBottom:'1rem', animation:'fadeUp 0.5s 0.1s ease both' }}>{evDate}</div>
@@ -197,7 +188,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
-          {/* Slide 1 — Cart'In */}
+          {/* Slide 1 */}
           {slide===1 && (
             <div style={{ maxWidth:960, width:'100%' }}>
               <div style={{ textAlign:'center', marginBottom:'clamp(1.25rem,2.5vh,2rem)', animation:'fadeUp 0.5s ease both' }}>
@@ -206,9 +197,9 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
               </div>
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit,minmax(190px,1fr))', gap:'clamp(0.5rem,1.5vw,1rem)' }}>
                 {[
-                  {icon:'◈',title:'+500M produits',     desc:'High-tech, auto, maison, mode, sport, beauté…'},
-                  {icon:'◉',title:'Prix tout compris',   desc:'Article + transport + douanes + livraison'},
-                  {icon:'◎',title:'App iOS & Android',   desc:'Commandez depuis votre smartphone'},
+                  {icon:'◈',title:'+500M produits',      desc:'High-tech, auto, maison, mode, sport, beauté…'},
+                  {icon:'◉',title:'Prix tout compris',    desc:'Article + transport + douanes + livraison'},
+                  {icon:'◎',title:'App iOS & Android',    desc:'Commandez depuis votre smartphone'},
                   {icon:'✦',title:'+800 000 colis livrés',desc:'+250 000 clients dans 6 pays africains'},
                 ].map((item,i)=>(
                   <div key={i} style={{ padding:'clamp(0.875rem,2vh,1.25rem)', borderRadius:'1rem', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', animation:`cardIn 0.5s ${0.1+i*0.1}s ease both` }}>
@@ -221,7 +212,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
             </div>
           )}
 
-          {/* Slide 2 — VHR Privilèges */}
+          {/* Slide 2 */}
           {slide===2 && (
             <div style={{ maxWidth:1060, width:'100%' }}>
               <div style={{ textAlign:'center', marginBottom:'clamp(1rem,2.5vh,1.75rem)', animation:'fadeUp 0.5s ease both' }}>
@@ -253,20 +244,25 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
 
           {/* Slide 3 — Lots */}
           {slide===3 && (
-            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)', minHeight:0, flex:'1 1 0', overflow:'hidden' }}>
+            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)', ...(isMobile ? {} : { minHeight:0, flex:'1 1 0', overflow:'hidden' }) }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', flexWrap:'wrap', flexShrink:0, animation:'fadeUp 0.4s ease both' }}>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1rem,2.5vw,1.75rem)', color:'white', letterSpacing:'-0.03em' }}>{lots.length} lots</span>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.8vw,1.25rem)', color:'#D97706' }}>{fmt(totalValue)} Ar de valeur totale</span>
               </div>
-              <div className="sc-lots" style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : `repeat(${Math.min(lots.length,5)},1fr)`, gridAutoRows:'1fr', gap:'clamp(0.3rem,0.6vw,0.5rem)', flex:'1 1 0', minHeight:0, overflow:'hidden' }}>
+              <div style={{
+                display:'grid',
+                gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : `repeat(${Math.min(lots.length,5)},1fr)`,
+                gap:'clamp(0.3rem,0.6vw,0.5rem)',
+                ...(isMobile ? {} : { gridAutoRows:'1fr', flex:'1 1 0', minHeight:0, overflow:'hidden' }),
+              }}>
                 {lots.slice(0,10).map((l,i)=>(
-                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', animation:`cardIn 0.35s ${i*0.05}s ease both`, minHeight:0 }}>
-                    <div style={{ flex:'1 1 0', minHeight:0, background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', animation:`cardIn 0.35s ${i*0.05}s ease both` }}>
+                    <div style={{ height: isMobile ? '130px' : undefined, flex: isMobile ? 'none' : '1 1 0', background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {l.photo_url ? (
                         <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}
                           onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
                       ) : null}
-                      <div style={{ display: l.photo_url ? 'none' : 'flex', width:'100%', height:'100%', background:'rgba(255,255,255,0.04)', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</div>
+                      <div style={{ display: l.photo_url ? 'none' : 'flex', width:'100%', height:'100%', background:'rgba(255,255,255,0.04)', alignItems:'center', justifyContent:'center', color:'rgba(0,0,0,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</div>
                     </div>
                     <div style={{ padding:'0.3rem 0.4rem', flexShrink:0 }}>
                       <div style={{ fontSize:'clamp(0.4rem,0.7vw,0.5625rem)', fontWeight:700, color:cc(l.categorie), textTransform:'uppercase', letterSpacing:'0.05em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -313,7 +309,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
       {act===2 && lot && (
         <div key={`lot-${lotIdx}-${ak}`} style={{ position:'absolute', inset:0 }}>
           {lot.photo_url && <div style={{ position:'absolute', inset:0, backgroundImage:`url(${lot.photo_url})`, backgroundSize:'cover', backgroundPosition:'center', opacity:0.07, filter:'blur(48px)', animation:'fadeIn 0.8s ease both' }} />}
-          <div className="sc-act2" style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', padding: isMobile ? '4.5rem 1.25rem 3.5rem' : 'clamp(4.5rem,9vh,6rem) clamp(1.5rem,5vw,5rem) clamp(4rem,8vh,5.5rem)', gap: isMobile ? '0.875rem' : 'clamp(2rem,5vw,5rem)', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowY: isMobile ? 'auto' : 'visible' }}>
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', padding: isMobile ? '4.5rem 1.25rem 3.5rem' : 'clamp(4.5rem,9vh,6rem) clamp(1.5rem,5vw,5rem) clamp(4rem,8vh,5.5rem)', gap: isMobile ? '0.875rem' : 'clamp(2rem,5vw,5rem)', flexDirection: isMobile ? 'column' : 'row', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowY: isMobile ? 'auto' : 'visible' }}>
             <div style={{ flexShrink:0, animation:'scaleIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>
               {lot.photo_url ? (
                 <img src={lot.photo_url} alt={lot.nom}
