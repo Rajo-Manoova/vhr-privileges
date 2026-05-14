@@ -26,7 +26,14 @@ export default async function AuditPage({
     .from('audit_logs')
     .select('*', { count: 'exact' })
 
-  if (action !== 'all') req = req.eq('action', action)
+  // Filtre : valeur exacte si contient '.', sinon préfixe (ex: 'tirage' → 'tirage.%')
+  if (action !== 'all') {
+    if (action.includes('.')) {
+      req = req.eq('action', action)
+    } else {
+      req = req.ilike('action', `${action}.%`)
+    }
+  }
   if (q) req = req.or(`user_email.ilike.%${q}%,entity_label.ilike.%${q}%`)
 
   const from = (page - 1) * PER_PAGE
@@ -79,11 +86,12 @@ export default async function AuditPage({
           {[
             { value: 'all',               label: 'Toutes'        },
             { value: 'member.created',    label: 'Inscriptions'  },
-            { value: 'member.updated',    label: 'Membres'       },
+            { value: 'member',            label: 'Membres'       },
             { value: 'member.deactivated',label: 'Désactivations'},
             { value: 'pin.reset',         label: 'PIN'           },
-            { value: 'commande.created',  label: 'Commandes'     },
-            { value: 'lot.created',       label: 'Lots'          },
+            { value: 'commande',          label: 'Commandes'     },
+            { value: 'lot',               label: 'Lots'          },
+            { value: 'tirage',            label: 'Tirages'       },
             { value: 'team.member_added', label: 'Équipe'        },
           ].map(({ value, label }) => {
             const active = action === value

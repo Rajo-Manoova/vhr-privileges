@@ -44,24 +44,26 @@ export async function createTirageSession(
 
 export async function updateTirageOverride(sessionId: string, override: boolean) {
   const supabase = await createClient()
+  const { data: s } = await supabase.from('tirage_sessions').select('label').eq('id', sessionId).single()
   const { error } = await supabase
     .from('tirage_sessions')
     .update({ eligibilite_override: override })
     .eq('id', sessionId)
   if (error) return { error: error.message }
-  await logAction('tirage.override_updated', 'tirage', sessionId, { data: { eligibilite_override: override } }, sessionId)
+  await logAction('tirage.override_updated', 'tirage', s?.label ?? sessionId, { data: { eligibilite_override: override } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
 
 export async function updateTirageTickets(sessionId: string, ticketsActifs: boolean) {
   const supabase = await createClient()
+  const { data: s } = await supabase.from('tirage_sessions').select('label').eq('id', sessionId).single()
   const { error } = await supabase
     .from('tirage_sessions')
     .update({ tickets_actifs: ticketsActifs })
     .eq('id', sessionId)
   if (error) return { error: error.message }
-  await logAction('tirage.tickets_updated', 'tirage', sessionId, { data: { tickets_actifs: ticketsActifs } }, sessionId)
+  await logAction('tirage.tickets_updated', 'tirage', s?.label ?? sessionId, { data: { tickets_actifs: ticketsActifs } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
@@ -99,7 +101,8 @@ export async function addSessionLot(sessionId: string, lotId: string) {
     .single()
 
   if (error) return { error: error.message }
-  await logAction('tirage.lot_added', 'tirage', sessionId, { data: { lot_id: lotId } }, sessionId)
+  const lotNom = (data as any)?.lots?.nom ?? lotId
+  await logAction('tirage.lot_added', 'tirage', lotNom, { data: { session_id: sessionId } }, sessionId)
   return { data }
 }
 
@@ -124,7 +127,8 @@ export async function reorderSessionLots(
     supabase.from('session_lots').update({ ordre: i + 1 }).eq('id', id)
   )
   await Promise.all(updates)
-  await logAction('tirage.lots_reordered', 'tirage', sessionId, { data: { order: orderedIds } }, sessionId)
+  const { data: s } = await supabase.from('tirage_sessions').select('label').eq('id', sessionId).single()
+  await logAction('tirage.lots_reordered', 'tirage', s?.label ?? sessionId, { data: { count: orderedIds.length } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
