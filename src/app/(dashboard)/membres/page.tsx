@@ -273,7 +273,7 @@ export default async function MembresPage({
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.125rem' }}>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)' }}>  
                             {fullName}
                           </span>
                           {isInactive && (
