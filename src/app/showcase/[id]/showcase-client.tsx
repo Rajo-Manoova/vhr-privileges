@@ -288,7 +288,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
               </div>
               <div style={{ fontSize:'clamp(0.875rem,1.7vw,1.25rem)', color:'rgba(255,255,255,0.48)', lineHeight:1.65, marginBottom:'2rem', animation:'fadeUp 0.5s 0.3s ease both' }}>
                 Demandez à votre animateur de vous inscrire maintenant.<br />
-                <span style={{ color:'#D97706', fontWeight:700 }}>C'est gratuit. C'est immédiat. Vous pouvez gagner un lot ce soir.</span>
+                <span style={{ color:'#D97706', fontWeight:700 }}>C'est gratuit. C'est immédiat. Vous pouvez gagner.</span>
               </div>
               <div className="sc-s5-btns" style={{ display:'flex', gap:'0.875rem', justifyContent:'center', flexWrap:'wrap', animation:'fadeUp 0.5s 0.45s ease both' }}>
                 <a href="/inscription" target="_blank" rel="noopener" style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'#D97706', color:'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'0.5rem', textDecoration:'none', boxShadow:'0 4px 24px rgba(217,119,6,0.4)' }}>
