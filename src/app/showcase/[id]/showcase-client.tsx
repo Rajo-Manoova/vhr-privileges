@@ -18,7 +18,7 @@ const LOT_DURATION   = 5000
 const TOTAL_SLIDES   = 5
 
 function fmt(n: number): string {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
 }
 
 function formatDate(iso: string | null): string {
@@ -104,7 +104,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
           <div style={{ fontSize:'0.4375rem', fontWeight:600, color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:'0.14em' }}>VHR Privilèges</div>
         </div>
       </div>
-      <div className="sc-hdr-title" style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,2vw,1.375rem)', color:'white', letterSpacing:'-0.02em', textAlign:'center', flex:1, padding:'0 1.25rem' }}>
+      <div className="sc-hdr-title" style={{ position:'absolute', left:'50%', transform:'translateX(-50%)', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,2vw,1.375rem)', color:'white', letterSpacing:'-0.02em', textAlign:'center', maxWidth:'50%', pointerEvents:'none' }}>
         {sessionLabel}
       </div>
       <div style={{ fontSize:'0.5625rem', fontWeight:700, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.1em', flexShrink:0 }}>
@@ -160,7 +160,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
 
       {/* ══ ACTE 1 ══ */}
       {act===1 && (
-        <div key={`s${slide}-${ak}`} style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(4rem,8vh,5.5rem) clamp(1.5rem,4vw,4rem) clamp(3.5rem,7vh,5rem)' }}>
+        <div key={`s${slide}-${ak}`} style={{ position:'absolute', inset:0, display:'flex', alignItems:slide===3?'stretch':'center', justifyContent:'center', padding:`clamp(4rem,8vh,5.5rem) clamp(1.5rem,4vw,4rem) clamp(3.5rem,7vh,5rem)` }}>
 
           {slide===0 && (
             <div style={{ textAlign:'center', width:'100%', maxWidth:800 }}>
@@ -170,7 +170,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
                   {fmt(totalValue)} Ar
                 </div>
               )}
-              <div style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1.125rem,2.8vw,2.25rem)', color:'white', letterSpacing:'-0.03em', marginBottom:'2rem', animation:'fadeUp 0.5s 0.35s ease both' }}>de lots à gagner ce soir</div>
+              <div style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1.125rem,2.8vw,2.25rem)', color:'white', letterSpacing:'-0.03em', marginBottom:'2rem', animation:'fadeUp 0.5s 0.35s ease both' }}>de lots à gagner</div>
               <div style={{ display:'flex', gap:'1.25rem', justifyContent:'center', flexWrap:'wrap', animation:'fadeUp 0.5s 0.5s ease both' }}>
                 {[{v:fmt(lots.length),l:'lots à tirer',c:'white'},{v:fmt(nbMembres),l:'membres inscrits',c:'#4ade80'}].map((s,i)=>(
                   <div key={i} style={{ padding:'0.875rem 1.75rem', borderRadius:'1rem', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)' }}>
@@ -235,25 +235,42 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
           )}
 
           {slide===3 && (
-            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)', height:'100%', justifyContent:'center' }}>
-              <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', flexWrap:'wrap', animation:'fadeUp 0.4s ease both' }}>
-                <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1rem,2.5vw,1.875rem)', color:'white', letterSpacing:'-0.03em' }}>{lots.length} lots</span>
-                <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.8vw,1.375rem)', color:'#D97706' }}>{fmt(totalValue)} Ar de valeur totale</span>
+            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.375rem,1vh,0.625rem)', minHeight:0, flex:'1 1 0', overflow:'hidden' }}>
+              {/* Title row */}
+              <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', flexWrap:'wrap', flexShrink:0, animation:'fadeUp 0.4s ease both' }}>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1rem,2.5vw,1.75rem)', color:'white', letterSpacing:'-0.03em' }}>{lots.length} lots</span>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.8vw,1.25rem)', color:'#D97706' }}>{fmt(totalValue)} Ar de valeur totale</span>
               </div>
-              <div className="sc-lots" style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(lots.length,5)},1fr)`, gap:'clamp(0.375rem,0.75vw,0.625rem)' }}>
+              {/* Grid — fills remaining space exactly */}
+              <div
+                className="sc-lots"
+                style={{
+                  display:'grid',
+                  gridTemplateColumns:`repeat(${Math.min(lots.length,5)},1fr)`,
+                  gridAutoRows:'1fr',
+                  gap:'clamp(0.3rem,0.6vw,0.5rem)',
+                  flex:'1 1 0',
+                  minHeight:0,
+                  overflow:'hidden',
+                }}
+              >
                 {lots.slice(0,10).map((l,i)=>(
-                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', animation:`cardIn 0.35s ${i*0.05}s ease both` }}>
-                    {l.photo_url ? (
-                      <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'clamp(75px,9vh,115px)', objectFit:'cover', display:'block' }} />
-                    ) : (
-                      <div style={{ width:'100%', height:'clamp(75px,9vh,115px)', background:'rgba(255,255,255,0.03)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</div>
-                    )}
-                    <div style={{ padding:'0.375rem 0.5rem' }}>
-                      <div style={{ fontSize:'clamp(0.45rem,0.75vw,0.5625rem)', fontWeight:700, color:cc(l.categorie), textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.15rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', animation:`cardIn 0.35s ${i*0.05}s ease both`, minHeight:0 }}>
+                    {/* Image — contain so full product visible */}
+                    <div style={{ flex:'1 1 0', minHeight:0, background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {l.photo_url ? (
+                        <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+                      ) : (
+                        <span style={{ color:'rgba(0,0,0,0.15)', fontFamily:'var(--font-display)', fontSize:'1.25rem', fontWeight:900 }}>✦</span>
+                      )}
+                    </div>
+                    {/* Text */}
+                    <div style={{ padding:'0.3rem 0.4rem', flexShrink:0, background:'rgba(255,255,255,0.04)' }}>
+                      <div style={{ fontSize:'clamp(0.4rem,0.7vw,0.5625rem)', fontWeight:700, color:cc(l.categorie), textTransform:'uppercase', letterSpacing:'0.05em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {l.categorie ? CATEGORIE_LABELS[l.categorie] : ''}
                       </div>
-                      <div style={{ fontSize:'clamp(0.5rem,0.85vw,0.6875rem)', fontWeight:700, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'0.1rem' }}>{l.nom}</div>
-                      {l.valeur_ar && <div style={{ fontSize:'clamp(0.45rem,0.75vw,0.5625rem)', fontWeight:700, color:'#D97706', fontFamily:'var(--font-display)' }}>{fmt(l.valeur_ar)} Ar</div>}
+                      <div style={{ fontSize:'clamp(0.4375rem,0.8vw,0.625rem)', fontWeight:700, color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.nom}</div>
+                      {l.valeur_ar && <div style={{ fontSize:'clamp(0.4rem,0.7vw,0.5625rem)', fontWeight:700, color:'#D97706', fontFamily:'var(--font-display)' }}>{fmt(l.valeur_ar)} Ar</div>}
                     </div>
                   </div>
                 ))}
@@ -271,7 +288,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
               </div>
               <div style={{ fontSize:'clamp(0.875rem,1.7vw,1.25rem)', color:'rgba(255,255,255,0.48)', lineHeight:1.65, marginBottom:'2rem', animation:'fadeUp 0.5s 0.3s ease both' }}>
                 Demandez à votre animateur de vous inscrire maintenant.<br />
-                <span style={{ color:'#D97706', fontWeight:700 }}>C'est gratuit. C'est immédiat. Vous pouvez gagner ce soir.</span>
+                <span style={{ color:'#D97706', fontWeight:700 }}>C'est gratuit. C'est immédiat. Vous pouvez gagner un lot ce soir.</span>
               </div>
               <div className="sc-s5-btns" style={{ display:'flex', gap:'0.875rem', justifyContent:'center', flexWrap:'wrap', animation:'fadeUp 0.5s 0.45s ease both' }}>
                 <a href="/inscription" target="_blank" rel="noopener" style={{ padding:'clamp(0.75rem,1.5vh,1rem) clamp(1.5rem,3vw,2.25rem)', borderRadius:'0.875rem', background:'#D97706', color:'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,1.75vw,1.25rem)', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'0.5rem', textDecoration:'none', boxShadow:'0 4px 24px rgba(217,119,6,0.4)' }}>
@@ -293,7 +310,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
           <div className="sc-act2" style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(4.5rem,9vh,6rem) clamp(1.5rem,5vw,5rem) clamp(4rem,8vh,5.5rem)', gap:'clamp(2rem,5vw,5rem)', flexWrap:'wrap' }}>
             <div className="sc-act2-img" style={{ flexShrink:0, animation:'scaleIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>
               {lot.photo_url ? (
-                <img src={lot.photo_url} alt={lot.nom} style={{ width:'min(38vh,360px)', height:'min(38vh,360px)', objectFit:'cover', borderRadius:'1.5rem', display:'block', boxShadow:'0 32px 80px rgba(0,0,0,0.65)' }} />
+                <img src={lot.photo_url} alt={lot.nom} style={{ width:'min(38vh,360px)', height:'min(38vh,360px)', objectFit:'contain', borderRadius:'1.5rem', display:'block', boxShadow:'0 32px 80px rgba(0,0,0,0.65)', background:'white' }} />
               ) : (
                 <div style={{ width:'min(38vh,360px)', height:'min(38vh,360px)', borderRadius:'1.5rem', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontSize:'4rem', color:'rgba(255,255,255,0.12)', fontWeight:900 }}>✦</div>
               )}
