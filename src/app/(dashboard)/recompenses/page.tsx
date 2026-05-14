@@ -153,83 +153,95 @@ export default async function RecompensesPage({
         </div>
       ) : (
         <>
-          <div className="card" style={{ padding: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-            <div style={{ minWidth: 560 }}>
+          <style>{`
+            @media(max-width:640px){
+              .wins-table-hdr { display:none!important }
+              .wins-row { display:block!important; padding:0.875rem 1rem!important }
+              .wins-row-grid { display:none!important }
+              .wins-card-body { display:block!important }
+            }
+            @media(min-width:641px){
+              .wins-card-body { display:none!important }
+            }
+          `}</style>
 
-              {/* Header */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 110px',
-                gap: '0.75rem', padding: '0.75rem 1.25rem',
-                borderBottom: '1px solid var(--border)', background: 'var(--bg-1)',
-              }}>
-                {['Membre', 'Lot gagné', 'Session', 'Date'].map(label => (
-                  <div key={label} style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-4)' }}>
-                    {label}
-                  </div>
-                ))}
-              </div>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
 
-              {/* Rows */}
-              {(wins ?? []).map((win: any, i: number) => {
-                const member  = win.members
-                const lot     = win.session_lots?.lots
-                const session = win.tirage_sessions
-                const cc      = lot?.categorie
-                  ? (CATEGORIE_COLORS[lot.categorie as LotCategorie] ?? { bg: '#f0f7f8', color: '#2c6976' })
-                  : { bg: '#f0f7f8', color: '#2c6976' }
+            {/* Desktop header */}
+            <div className="wins-table-hdr" style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 110px',
+              gap: '0.75rem', padding: '0.75rem 1.25rem',
+              borderBottom: '1px solid var(--border)', background: 'var(--bg-1)',
+            }}>
+              {['Membre', 'Lot gagné', 'Session', 'Date'].map(label => (
+                <div key={label} style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-4)' }}>
+                  {label}
+                </div>
+              ))}
+            </div>
 
-                return (
-                  <div key={win.id} style={{
+            {(wins ?? []).map((win: any, i: number) => {
+              const member  = win.members
+              const lot     = win.session_lots?.lots
+              const session = win.tirage_sessions
+              const cc      = lot?.categorie
+                ? (CATEGORIE_COLORS[lot.categorie as LotCategorie] ?? { bg: '#f0f7f8', color: '#2c6976' })
+                : { bg: '#f0f7f8', color: '#2c6976' }
+              const dateStr = win.confirmed_at
+                ? new Date(win.confirmed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                : '—'
+
+              return (
+                <div
+                  key={win.id}
+                  className="wins-row"
+                  style={{ borderBottom: i < (wins?.length ?? 0) - 1 ? '1px solid var(--border)' : 'none', background: 'white' }}
+                >
+                  {/* Desktop grid row */}
+                  <div className="wins-row-grid" style={{
                     display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 110px',
                     gap: '0.75rem', padding: '0.75rem 1.25rem', alignItems: 'center',
-                    borderBottom: i < (wins?.length ?? 0) - 1 ? '1px solid var(--border)' : 'none',
-                    background: 'white',
                   }}>
-
-                    {/* Membre */}
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {member?.prenom} {member?.nom ?? ''}
                       </div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-4)' }}>
                         {ETAPE_LABELS[member?.etape as Etape]?.split('(')[0].trim() ?? member?.etape}
                       </div>
                     </div>
-
-                    {/* Lot */}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {lot?.nom ?? '—'}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
-                        {lot?.categorie && (
-                          <span style={{ padding: '0.1rem 0.4rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: cc.bg, color: cc.color }}>
-                            {CATEGORIE_LABELS[lot.categorie as LotCategorie] ?? lot.categorie}
-                          </span>
-                        )}
-                        {lot?.valeur_ar && (
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-4)' }}>
-                            {lot.valeur_ar.toLocaleString('fr-FR')} Ar
-                          </span>
-                        )}
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lot?.nom ?? '—'}</div>
+                      <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
+                        {lot?.categorie && <span style={{ padding: '0.1rem 0.4rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: cc.bg, color: cc.color }}>{CATEGORIE_LABELS[lot.categorie as LotCategorie]}</span>}
+                        {lot?.valeur_ar && <span style={{ fontSize: '0.6875rem', color: 'var(--text-4)' }}>{lot.valeur_ar.toLocaleString('fr-FR')} Ar</span>}
                       </div>
                     </div>
-
-                    {/* Session */}
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {session ? sessionLabel(session) : '—'}
-                    </div>
-
-                    {/* Date */}
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-4)', whiteSpace: 'nowrap' }}>
-                      {win.confirmed_at
-                        ? new Date(win.confirmed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '—'}
-                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session ? sessionLabel(session) : '—'}</div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-4)', whiteSpace: 'nowrap' }}>{dateStr}</div>
                   </div>
-                )
-              })}
-            </div>
+
+                  {/* Mobile card body */}
+                  <div className="wins-card-body">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-1)' }}>{member?.prenom} {member?.nom ?? ''}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-4)', marginTop: '0.125rem' }}>{ETAPE_LABELS[member?.etape as Etape]?.split('(')[0].trim() ?? member?.etape}</div>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-4)', whiteSpace: 'nowrap', marginLeft: '0.75rem', flexShrink: 0 }}>{dateStr}</div>
+                    </div>
+                    <div style={{ padding: '0.625rem 0.75rem', background: 'var(--bg-1)', borderRadius: '0.5rem', marginBottom: '0.375rem' }}>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', marginBottom: '0.25rem' }}>{lot?.nom ?? '—'}</div>
+                      <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {lot?.categorie && <span style={{ padding: '0.15rem 0.5rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: cc.bg, color: cc.color }}>{CATEGORIE_LABELS[lot.categorie as LotCategorie]}</span>}
+                        {lot?.valeur_ar && <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', fontFamily: 'var(--font-display)' }}>{lot.valeur_ar.toLocaleString('fr-FR')} Ar</span>}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-4)' }}>{session ? sessionLabel(session) : '—'}</div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <Pagination currentPage={page} totalPages={totalPages} buildUrl={(p) => buildUrl({ page: p.toString() })} />

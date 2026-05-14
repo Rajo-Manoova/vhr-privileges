@@ -787,13 +787,53 @@ export default function TirageDetail({
 
     const CSS = `
       @media(max-width:768px){
-        .proj-title{font-size:clamp(0.9rem,3.5vw,1.25rem)!important;line-height:1.25!important}
-        .proj-win-name{font-size:clamp(2.5rem,8vw,5rem)!important}
-        .proj-left-panel{width:150px!important}
-        .proj-ready{flex-direction:column!important;align-items:center!important;gap:1.25rem!important}
+        /* Header */
+        .proj-title{
+          font-size:clamp(0.75rem,2.5vw,1rem)!important;
+          white-space:nowrap!important;
+          overflow:hidden!important;
+          text-overflow:ellipsis!important;
+          max-width:45vw!important;
+          line-height:1.2!important
+        }
+        /* Tableau — left panel hidden on very small, reduced on medium */
+        .proj-left-panel{width:130px!important;min-width:130px!important}
+        /* Tableau grid — 3 cols: img + nom + action */
+        .proj-tableau-row{
+          grid-template-columns:40px 1fr 90px!important;
+          gap:0.5rem!important;
+          padding:0.5rem 0.75rem!important
+        }
+        .proj-tableau-hdr-row{
+          grid-template-columns:40px 1fr 90px!important;
+          gap:0.5rem!important;
+          padding:0.5rem 0.75rem!important
+        }
+        .proj-col-cat{display:none!important}
+        .proj-col-val{display:none!important}
+        /* Ready phase */
+        .proj-ready{flex-direction:column!important;align-items:center!important;gap:1rem!important}
         .proj-ready-txt{text-align:center!important}
-        .proj-ready-img{width:min(55vw,220px)!important;height:min(55vw,220px)!important}
-        .proj-confirm-btns{grid-template-columns:1fr!important;max-width:320px!important}
+        .proj-ready-img{width:min(50vw,200px)!important;height:min(50vw,200px)!important}
+        /* Winner name */
+        .proj-win-name{font-size:clamp(2.25rem,9vw,5rem)!important;line-height:1!important}
+        /* Confirm buttons */
+        .proj-confirm-btns{
+          grid-template-columns:1fr 1fr!important;
+          max-width:380px!important;
+          gap:0.5rem!important
+        }
+        .proj-confirm-btns button:last-child{
+          grid-column:1/-1!important
+        }
+        /* Animation title */
+        .proj-anim-title{
+          font-size:clamp(2.5rem,8vw,5rem)!important
+        }
+      }
+      @media(max-width:480px){
+        .proj-left-panel{display:none!important}
+        .proj-confirm-btns{grid-template-columns:1fr!important}
       }
       @keyframes cdIn  { 0%{transform:scale(0.2);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
       @keyframes winIn { 0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)} 65%{transform:scale(1.04);filter:blur(0)} 100%{transform:scale(1);opacity:1} }
@@ -877,7 +917,7 @@ export default function TirageDetail({
                     </div>
 
                     {/* Catégorie */}
-                    <div>
+                    <div className="proj-col-cat">
                       {cc && sl.lot?.categorie && (
                         <span style={{ padding: '0.2rem 0.5rem', borderRadius: 9999, fontSize: '0.625rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' as const }}>
                           {CATEGORIE_LABELS[sl.lot.categorie]}
@@ -1040,7 +1080,7 @@ export default function TirageDetail({
 
           {/* ANIMATING */}
           {phase === 'animating' && (
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center', margin: 'auto 0' }}>
+            <div className="proj-anim-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center', margin: 'auto 0' }}>
               {animName}
             </div>
           )}

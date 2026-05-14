@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -25,7 +25,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/membres',     icon: Users,            label: 'Membres'         },
     { href: '/commandes',   icon: ShoppingCart,     label: 'Commandes'       },
     { href: '/catalogue',   icon: BookOpen,         label: 'Catalogue lots'  },
-    { href: '/recompenses', icon: Award,            label: 'Historique des gains'     },
+    { href: '/recompenses', icon: Award,            label: 'Récompenses'     },
     { href: '/tirages',     icon: Shuffle,          label: 'Tirages'         },
     { href: '/settings',    icon: Settings,         label: 'Paramètres'      },
     { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },
@@ -47,12 +47,15 @@ interface Props {
 }
 
 export default function DashboardShell({ role, userEmail, children }: Props) {
-  const [open, setOpen]   = useState(false)
-  const pathname          = usePathname()
-  const router            = useRouter()
-  const navItems          = role ? (NAV[role] ?? []) : []
+  const [open,        setOpen]              = useState(false)
+  const [clickedHref, setClickedHref]       = useState<string | null>(null)
+  const [isPending,   startNavTransition]   = useTransition()
+  const pathname   = usePathname()
+  const router     = useRouter()
+  const navItems   = role ? (NAV[role] ?? []) : []
 
-  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => { setOpen(false) },       [pathname])
+  useEffect(() => { setClickedHref(null) }, [pathname])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -60,6 +63,12 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
     router.push('/login')
     router.refresh()
   }
+
+  const handleNavClick = useCallback((href: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    setClickedHref(href)
+    startNavTransition(() => { router.push(href) })
+  }, [router])
 
   function isActive(href: string) {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -110,30 +119,48 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
       {/* Nav */}
       <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
         {navItems.map(({ href, icon: Icon, label }) => {
-          const active = isActive(href)
+          const active  = isActive(href)
+          const clicked = clickedHref === href && isPending
           return (
-            <Link
+            <a
               key={href}
               href={href}
+              onClick={(e) => handleNavClick(href, e)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.625rem 0.875rem', borderRadius: '0.625rem',
-                fontSize: '0.875rem', fontWeight: active ? 600 : 500,
-                color: active ? 'var(--brand)' : 'var(--text-2)',
-                background: active ? 'rgba(15,45,53,0.07)' : 'transparent',
-                textDecoration: 'none', transition: 'all 150ms ease',
+                fontSize: '0.875rem', fontWeight: active ? 700 : 500,
+                color: active ? 'white' : clicked ? 'var(--brand)' : 'var(--text-2)',
+                background: active
+                  ? 'var(--brand)'
+                  : clicked
+                  ? 'rgba(15,45,53,0.12)'
+                  : 'transparent',
+                textDecoration: 'none',
+                transition: 'background 150ms ease, color 150ms ease, transform 100ms ease',
                 position: 'relative', fontFamily: 'var(--font-body)',
+                transform: clicked ? 'scale(0.98)' : 'scale(1)',
+                cursor: 'pointer',
               }}
             >
-              {active && (
+              <Icon
+                size={17}
+                style={{
+                  color: active ? 'rgba(255,255,255,0.85)' : clicked ? 'var(--brand)' : 'var(--text-4)',
+                  flexShrink: 0,
+                  transition: 'color 150ms ease',
+                }}
+              />
+              {label}
+              {clicked && (
                 <span style={{
-                  position: 'absolute', left: 0, top: '20%', height: '60%',
-                  width: 3, background: 'var(--brand)', borderRadius: '0 3px 3px 0',
+                  position: 'absolute', right: '0.75rem',
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: 'var(--brand)',
+                  animation: 'navPulse 0.6s ease-in-out infinite',
                 }} />
               )}
-              <Icon size={17} style={{ color: active ? 'var(--brand)' : 'var(--text-4)', flexShrink: 0 }} />
-              {label}
-            </Link>
+            </a>
           )
         })}
       </nav>
@@ -192,6 +219,11 @@ export default function DashboardShell({ role, userEmail, children }: Props) {
 
   return (
     <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-0)', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
+      <style>{`
+        @keyframes navPulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+        a:hover { background: rgba(15,45,53,0.06) !important; }
+        a[style*="background: var(--brand)"]:hover { background: var(--brand) !important; }
+      `}</style>
 
       {/* Sidebar desktop */}
       <aside

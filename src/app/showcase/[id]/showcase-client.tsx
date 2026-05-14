@@ -94,24 +94,28 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
   const lot = lots[lotIdx]
 
   const Header = () => (
-    <div style={{ position:'absolute', top:0, left:0, right:0, padding:'0.875rem 1.5rem', display:'flex', alignItems:'center', zIndex:20, background:'linear-gradient(to bottom,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'0.625rem', flexShrink:0 }}>
-        <img src="/logo-cartin.png" alt="Cart'In" style={{ height:34, width:'auto', borderRadius:'0.375rem' }}
-          onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
-        <div style={{ display:'none', width:34, height:34, borderRadius:'0.5rem', background:'#D97706', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontWeight:900, fontSize:'0.875rem', color:'white', flexShrink:0 }}>C</div>
-        <div>
-          <div style={{ fontSize:'0.6875rem', fontWeight:800, color:'white', letterSpacing:'0.1em' }}>CART'IN</div>
-          <div style={{ fontSize:'0.4375rem', fontWeight:600, color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:'0.14em' }}>VHR Privilèges</div>
+    <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20, background:'linear-gradient(to bottom,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
+      <div style={{ display:'flex', alignItems:'center', padding:'0.75rem 1.25rem', gap:'0.5rem' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexShrink:0 }}>
+          <img src="/logo-cartin.png" alt="Cart'In"
+            style={{ height:28, width:'auto', borderRadius:'0.3rem', flexShrink:0 }}
+            onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
+          <div style={{ display:'none', width:28, height:28, borderRadius:'0.4rem', background:'#D97706', alignItems:'center', justifyContent:'center', fontFamily:'var(--font-display)', fontWeight:900, fontSize:'0.75rem', color:'white', flexShrink:0 }}>C</div>
+          <div>
+            <div style={{ fontSize:'0.5625rem', fontWeight:800, color:'white', letterSpacing:'0.1em', whiteSpace:'nowrap' }}>CART'IN</div>
+            <div className="sc-sub" style={{ fontSize:'0.375rem', fontWeight:600, color:'rgba(255,255,255,0.3)', textTransform:'uppercase' as const, letterSpacing:'0.12em', whiteSpace:'nowrap' }}>VHR Privilèges</div>
+          </div>
         </div>
-      </div>
-      <div className="sc-hdr-title" style={{ position:'absolute', left:'50%', transform:'translateX(-50%)', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.875rem,2vw,1.375rem)', color:'white', letterSpacing:'-0.02em', textAlign:'center', maxWidth:'50%', pointerEvents:'none' }}>
-        {sessionLabel}
-      </div>
-      <div style={{ fontSize:'0.5625rem', fontWeight:700, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.1em', flexShrink:0 }}>
-        {act===1 ? `${slide+1}/${TOTAL_SLIDES}` : `${lotIdx+1}/${lots.length}`}
+        <div className="sc-hdr-title" style={{ flex:1, fontFamily:'var(--font-display)', fontWeight:800, fontSize:'clamp(0.75rem,2vw,1.25rem)', color:'white', letterSpacing:'-0.02em', textAlign:'center', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', padding:'0 0.5rem' }}>
+          {sessionLabel}
+        </div>
+        <div style={{ fontSize:'0.5625rem', fontWeight:700, color:'rgba(255,255,255,0.28)', textTransform:'uppercase' as const, letterSpacing:'0.1em', flexShrink:0 }}>
+          {act===1 ? `${slide+1}/${TOTAL_SLIDES}` : `${lotIdx+1}/${lots.length}`}
+        </div>
       </div>
     </div>
   )
+
 
   const Footer = () => (
     <div className="sc-footer" style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0.5rem 1.25rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', flexWrap:'wrap', zIndex:20, background:'linear-gradient(to top,rgba(7,14,24,0.95) 0%,transparent 100%)' }}>
