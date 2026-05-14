@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Play, RotateCcw, CheckCircle2, Maximize2, Minimize2,
   Trophy, AlertCircle, ChevronRight, Users, ChevronDown, ChevronUp,
-  Plus, Trash2, PackageOpen, Loader2, GripVertical, ArrowUp, ArrowDown, ArrowUpDown,
+  Plus, Trash2, PackageOpen, Loader2, GripVertical, ArrowUp, ArrowDown, ArrowUpDown, Volume2, VolumeX,
 } from 'lucide-react'
 import type { Member, Lot, TirageTypeConfig, Palier } from '@/types'
 import { CATEGORIE_LABELS, CATEGORIE_COLORS, ETAPE_LABELS, PALIER_CHANCES, PALIER_ORDER, PALIER_COLORS, PALIER_LABELS, CATEGORIE_PALIER_MIN } from '@/types'
@@ -21,7 +21,7 @@ interface SessionLot {
   lot_id: string
   ordre: number
   status: string
-  lot: { id: string; nom: string; categorie: LotCategorie; valeur_ar?: number | null } | null
+  lot: { id: string; nom: string; categorie: LotCategorie; valeur_ar?: number | null; photo_url?: string | null } | null
 }
 
 interface Win {
@@ -407,7 +407,22 @@ export default function TirageDetail({
   const [removingLotId, setRemovingLotId]   = useState<string | null>(null)
   const [lotError,      setLotError]        = useState<string | null>(null)
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const soundRefs    = useRef<Record<string, HTMLAudioElement>>({})
+  const [countdown,    setCountdown]    = useState<number>(0)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const confettiData = useState(() =>
+    Array.from({ length: 60 }, (_, i) => ({
+      left:  Math.round(Math.random() * 100),
+      delay: Math.round(Math.random() * 150) / 100,
+      dur:   Math.round((2.2 + Math.random() * 1.8) * 10) / 10,
+      color: ['#f59e0b','#ef4444','#3b82f6','#22c55e','#a855f7','#ec4899','#ffffff'][i % 7],
+      rot:   Math.round(Math.random() * 360),
+      w:     Math.round(6 + Math.random() * 6),
+      h:     Math.round(8 + Math.random() * 8),
+    }))
+  )[0]
 
   // Compat backward : soiree = tirage équitable (pas de pondération)
   const isSoiree = session.type === 'soiree_16mai'
@@ -492,6 +507,36 @@ export default function TirageDetail({
   )
 
   /* ── Gestion lots ── */
+
+  function snd(key: string, fromSec = 0) {
+    if (!soundEnabled) return
+    const a = soundRefs.current[key]; if (!a) return
+    a.pause(); a.currentTime = fromSec; a.play().catch(() => {})
+  }
+  function stopSnd(key: string) {
+    const a = soundRefs.current[key]
+    if (a) { a.pause(); a.currentTime = 0 }
+  }
+  function playDrumroll() { snd(`drumroll-${Math.floor(Math.random() * 3) + 1}`) }
+  function playVictory()  { snd(Math.random() < 0.6 ? 'victory-big' : 'victory-chime') }
+
+  function startDraw() {
+    if (countdown > 0) return
+    snd('countdown', 7)
+    setCountdown(3)
+    timerRef.current = setTimeout(() => {
+      setCountdown(2)
+      timerRef.current = setTimeout(() => {
+        setCountdown(1)
+        timerRef.current = setTimeout(() => {
+          setCountdown(0)
+          stopSnd('countdown')
+          snd('sweep')
+          setTimeout(() => { playDrumroll(); draw() }, 350)
+        }, 1000)
+      }, 1000)
+    }, 1000)
+  }
 
   async function handleReorder(orderedIds: string[]) {
     const reordered = orderedIds.map((id, i) => {
@@ -581,6 +626,10 @@ export default function TirageDetail({
       sessionLotId: currentSL.id,
     }
     setWins(prev => [...prev, newWin])
+    stopSnd('drumroll-1'); stopSnd('drumroll-2'); stopSnd('drumroll-3')
+    playVictory()
+    setShowConfetti(true)
+    setTimeout(() => setShowConfetti(false), 5000)
 
     const supabase = createClient()
     supabase.from('tirage_wins').insert({
@@ -611,6 +660,15 @@ export default function TirageDetail({
   }
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const files = ['countdown','tension','sweep','drumroll-1','drumroll-2','drumroll-3','victory-big','victory-chime']
+    const s: Record<string, HTMLAudioElement> = {}
+    files.forEach(f => { s[f] = new Audio(`/sounds/${f}.mp3`) })
+    soundRefs.current = s
+    return () => { Object.values(s).forEach(a => { a.pause(); a.currentTime = 0 }) }
+  }, [])
+
+  useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [])
 
@@ -618,66 +676,208 @@ export default function TirageDetail({
 
   /* ── Mode Projecteur ── */
   if (projector) {
+    const cc = currentLot?.lot?.categorie
+      ? CATEGORIE_COLORS[currentLot.lot.categorie] ?? { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }
+      : null
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--brand)', display: 'flex', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
-        <div style={{ width: 260, flexShrink: 0, padding: '5rem 1.25rem 2rem', overflowY: 'auto', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-          <LotsPanel sessionLots={sessionLots} wins={wins} lotIndex={lotIndex} phase={phase} dark />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0d1f2d', display: 'flex', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
+        <style>{`
+          @keyframes cdIn  { 0%{transform:scale(0.2);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+          @keyframes cdOut { 0%{transform:scale(1);opacity:1}   100%{transform:scale(2.5);opacity:0} }
+          @keyframes winIn { 0%{transform:scale(0.15) translateY(30px);opacity:0;filter:blur(24px)} 65%{transform:scale(1.04);filter:blur(0)} 100%{transform:scale(1);opacity:1} }
+          @keyframes photoIn { 0%{transform:scale(1.08);opacity:0} 100%{transform:scale(1);opacity:1} }
+          @keyframes confetti { 0%{transform:translateY(-10px) rotate(0deg);opacity:1} 100%{transform:translateY(105vh) rotate(900deg);opacity:0} }
+          @keyframes pulse { 0%,100%{opacity:0.15} 50%{opacity:0.35} }
+        `}</style>
+
+        {/* ── Panneau gauche — liste des lots ── */}
+        <div style={{ width: 190, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)', overflowY: 'auto' }}>
+          {/* Header + mute */}
+          <div style={{ padding: '1rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)' }}>
+              {sessionLots.length} lots
+            </span>
+            <button
+              onClick={() => setSoundEnabled(v => !v)}
+              title={soundEnabled ? 'Couper le son' : 'Activer le son'}
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.3rem 0.5rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+            </button>
+          </div>
+
+          {/* Lots list */}
+          {[...sessionLots].sort((a,b) => a.ordre - b.ordre).map((sl, i) => {
+            const won = wins.some(w => w.sessionLotId === sl.id)
+            const cur = i === lotIndex && phase !== 'completed'
+            const w   = wins.find(w => w.sessionLotId === sl.id)
+            return (
+              <div key={sl.id} style={{ padding: '0.625rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.04)', background: cur ? 'rgba(255,255,255,0.07)' : 'transparent', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: won ? '#22c55e' : cur ? 'var(--accent)' : 'rgba(255,255,255,0.1)', fontSize: '0.5625rem', fontWeight: 700, color: won || cur ? 'white' : 'rgba(255,255,255,0.4)' }}>
+                  {won ? '✓' : sl.ordre}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: cur ? 700 : 400, color: won ? 'rgba(255,255,255,0.25)' : cur ? 'white' : 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: won ? 'line-through' : 'none' }}>
+                    {sl.lot?.nom}
+                  </div>
+                  {won && w && (
+                    <div style={{ fontSize: '0.5625rem', color: '#4ade80', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      🏆 {w.memberName}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 2rem', position: 'relative' }}>
-          <button onClick={toggleProjector} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', display: 'flex' }}>
-            <Minimize2 size={18} />
+        {/* ── Zone principale ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: '2rem' }}>
+
+          {/* Fermer */}
+          <button onClick={toggleProjector} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', zIndex: 20 }}>
+            <Minimize2 size={16} />
           </button>
 
-          {currentLot && phase !== 'completed' && (
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.35)', marginBottom: '0.25rem' }}>
-                {displayName} · Lot {lotIndex + 1} / {sessionLots.length}
+          {/* Label session + progression */}
+          {phase !== 'completed' && (
+            <div style={{ position: 'absolute', top: '1.25rem', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: 5 }}>
+              <div style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.28)' }}>
+                {displayName}
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(1rem, 2vw, 1.5rem)', color: 'rgba(255,255,255,0.7)', letterSpacing: '-0.02em' }}>
-                {currentLot.lot?.nom}
+              {/* Barre de progression */}
+              <div style={{ display: 'flex', gap: '3px', marginTop: '0.5rem', justifyContent: 'center' }}>
+                {sessionLots.map((sl, i) => {
+                  const won = wins.some(w => w.sessionLotId === sl.id)
+                  return <div key={sl.id} style={{ width: i === lotIndex ? 20 : 8, height: 3, borderRadius: 9999, background: won ? '#22c55e' : i === lotIndex ? 'var(--accent)' : 'rgba(255,255,255,0.15)', transition: 'all 400ms ease' }} />
+                })}
               </div>
             </div>
           )}
 
-          <div style={{ textAlign: 'center', width: '100%' }}>
-            {phase === 'animating' && (
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 10vw, 7rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.3)', lineHeight: 1, userSelect: 'none' }}>
-                {animName}
-              </div>
-            )}
-            {phase === 'winner' && winner && (
-              <div style={{ animation: 'scaleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 1, marginBottom: '0.5rem', textShadow: '0 0 80px rgba(255,255,255,0.12)' }}>
-                  {winner.prenom}
+          {/* ── PHASE READY ── */}
+          {phase === 'ready' && countdown === 0 && (
+            <div style={{ textAlign: 'center', maxWidth: 520 }}>
+              {/* Photo du lot */}
+              {currentLot?.lot?.photo_url ? (
+                <img
+                  src={currentLot.lot.photo_url}
+                  alt={currentLot.lot?.nom}
+                  style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: '1.5rem', marginBottom: '1.75rem', display: 'block', margin: '0 auto 1.75rem', animation: 'photoIn 0.5s ease both' }}
+                />
+              ) : (
+                <div style={{ width: 220, height: 220, borderRadius: '1.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.75rem' }}>
+                  <Trophy size={64} style={{ color: 'rgba(255,255,255,0.15)' }} />
                 </div>
-                {winner.nom && (
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.55)', marginBottom: '2rem' }}>
-                    {winner.nom}
-                  </div>
+              )}
+
+              {/* Catégorie + valeur */}
+              <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'center', alignItems: 'center', marginBottom: '1rem' }}>
+                {cc && currentLot?.lot?.categorie && (
+                  <span style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
+                    {CATEGORIE_LABELS[currentLot.lot.categorie]}
+                  </span>
                 )}
-                <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => draw(winner.id)} />
+                {currentLot?.lot?.valeur_ar && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+                    {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                  </span>
+                )}
               </div>
-            )}
-            {phase === 'ready' && (
-              <div>
-                <button onClick={() => draw()} style={{ padding: '1.5rem 3rem', borderRadius: '1rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1.25rem, 3vw, 2rem)', letterSpacing: '-0.02em', cursor: 'pointer', boxShadow: '0 8px 32px rgba(217,119,6,0.4)', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0 auto' }}>
-                  <Play size={28} /> Tirer au sort
-                </button>
-                <div style={{ marginTop: '1.25rem', color: 'rgba(255,255,255,0.35)', fontSize: '0.875rem' }}>
-                  {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
+
+              {/* Nom du lot */}
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '2.5rem' }}>
+                {currentLot?.lot?.nom}
+              </div>
+
+              {/* Bouton tirer au sort */}
+              <button
+                onClick={startDraw}
+                style={{ padding: '1.25rem 3rem', borderRadius: '1rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 40px rgba(217,119,6,0.35)' }}
+              >
+                <Play size={24} /> Tirer au sort
+              </button>
+
+              <div style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.8125rem' }}>
+                {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
+              </div>
+            </div>
+          )}
+
+          {/* ── COUNTDOWN overlay ── */}
+          {countdown > 0 && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', zIndex: 15 }}>
+              <div style={{ position: 'absolute', inset: 0, animation: 'pulse 0.5s ease-in-out infinite', background: 'radial-gradient(circle, rgba(217,119,6,0.15) 0%, transparent 70%)' }} />
+              <div
+                key={countdown}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(10rem, 22vw, 16rem)', fontWeight: 900, color: 'white', lineHeight: 1, userSelect: 'none', zIndex: 1, animation: 'cdIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both', textShadow: '0 0 80px rgba(217,119,6,0.6)' }}
+              >
+                {countdown}
+              </div>
+            </div>
+          )}
+
+          {/* ── ANIMATING ── */}
+          {phase === 'animating' && (
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 11vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.2)', lineHeight: 1, userSelect: 'none', textAlign: 'center', padding: '0 2rem' }}>
+              {animName}
+            </div>
+          )}
+
+          {/* ── WINNER ── */}
+          {phase === 'winner' && winner && (
+            <div style={{ textAlign: 'center', width: '100%', position: 'relative', zIndex: 5, animation: 'winIn 0.75s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+              {/* Photo en fond */}
+              {currentLot?.lot?.photo_url && (
+                <div style={{ position: 'absolute', inset: -200, backgroundImage: `url(${currentLot.lot.photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06, filter: 'blur(40px)', zIndex: -1 }} />
+              )}
+              {/* Petit label lot */}
+              {currentLot?.lot?.nom && (
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: '1.5rem' }}>
+                  🏆 {currentLot.lot.nom}
                 </div>
+              )}
+              {/* Prénom */}
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9, textShadow: '0 0 60px rgba(255,255,255,0.08)' }}>
+                {winner.prenom}
               </div>
-            )}
-            {phase === 'completed' && (
-              <div>
-                <Trophy size={60} style={{ color: 'var(--accent)', margin: '0 auto 1.5rem', display: 'block' }} />
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.5rem, 6vw, 5rem)', color: 'white', letterSpacing: '-0.04em' }}>
-                  Tirage terminé !
+              {winner.nom && (
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>
+                  {winner.nom}
                 </div>
+              )}
+              {!winner.nom && <div style={{ marginBottom: '2rem' }} />}
+              <VerifyPanel verifyEmail={verifyEmail} verifyError={verifyError} dark onEmailChange={v => { setVerifyEmail(v); setVerifyError(null) }} onConfirm={confirmWin} onRedraw={() => draw(winner.id)} />
+            </div>
+          )}
+
+          {/* ── COMPLETED ── */}
+          {phase === 'completed' && (
+            <div style={{ textAlign: 'center' }}>
+              <Trophy size={72} style={{ color: 'var(--accent)', display: 'block', margin: '0 auto 1.5rem' }} />
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', color: 'white', letterSpacing: '-0.04em', marginBottom: '2rem' }}>
+                Tirage terminé !
               </div>
-            )}
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 360, margin: '0 auto' }}>
+                {wins.map((w, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem 1rem', background: 'rgba(255,255,255,0.06)', borderRadius: '0.625rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4ade80' }}>#{i+1}</span>
+                    <span style={{ flex: 1, textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.memberName}</span>
+                    <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{w.lotNom}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Confetti ── */}
+          {showConfetti && (
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 20 }}>
+              {confettiData.map((p, i) => (
+                <div key={i} style={{ position: 'absolute', left: `${p.left}%`, top: -20, width: p.w, height: p.h, borderRadius: 2, background: p.color, animation: `confetti ${p.dur}s ${p.delay}s ease-in both`, transform: `rotate(${p.rot}deg)` }} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -685,6 +885,7 @@ export default function TirageDetail({
 
   /* ── Mode Dashboard ── */
   return (
+
     <div>
       {/* En-tête */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
