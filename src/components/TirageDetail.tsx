@@ -1227,18 +1227,11 @@ export default function TirageDetail({
 {ticketsActifs ? ` · ${ticketCount} tickets` : ''}{maxWinsPerMember > 0 ? ` · gain max ${maxWinsPerMember + 1}×` : ''}
           </p>
         </div>
-        <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
-        {readonly && (
-          <a href={`/showcase/${sessionId}`} target="_blank" rel="noopener" style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem', padding:'0.625rem 1.25rem', borderRadius:'0.625rem', background:'var(--brand)', color:'white', border:'none', fontSize:'0.875rem', fontWeight:600, textDecoration:'none', fontFamily:'var(--font-body)' }}>
-            <Maximize2 size={15} /> Showcase
-          </a>
-        )}
         {phase !== 'completed' && !readonly && (
           <button onClick={toggleProjector} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.625rem', background: 'var(--brand)', color: 'white', border: 'none', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             <Maximize2 size={15} /> Mode projecteur
           </button>
         )}
-        </div>
       </div>
 
       {error && (
