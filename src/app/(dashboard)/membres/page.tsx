@@ -13,7 +13,7 @@ import type { ReactElement } from 'react'
 const PER_PAGE = 10
 type SortField = 'prenom' | 'email' | 'etape' | 'niveau' | 'cumul_ar' | 'created_at'
 
-const COLS = '1fr 120px 130px 160px 210px'
+const COLS = 'minmax(170px, 1fr) 120px 130px 160px 210px'
 
 const PALIERS: Array<{ value: string; label: string }> = [
   { value: 'all',    label: 'Tous niveaux' },
@@ -273,7 +273,7 @@ export default async function MembresPage({
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.125rem' }}>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)' }}>  
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-1)', overflowWrap: 'break-word' }}>  
                             {fullName}
                           </span>
                           {isInactive && (
