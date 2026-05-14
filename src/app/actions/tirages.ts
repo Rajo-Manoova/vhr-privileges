@@ -10,6 +10,7 @@ export async function createTirageSession(
   label: string,
   scheduledAt?: string | null,
   ticketsActifs: boolean = true,
+  maxWinsPerMember: number = 0,
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -25,8 +26,9 @@ export async function createTirageSession(
       status:               'pending',
       created_by:           user.id,
       scheduled_at:         scheduledAt || null,
-      eligibilite_override: false,
-      tickets_actifs:       ticketsActifs,
+      eligibilite_override:    false,
+      tickets_actifs:          ticketsActifs,
+      max_wins_per_member:     maxWinsPerMember,
     })
     .select()
     .single()
@@ -35,7 +37,7 @@ export async function createTirageSession(
 
   await logAction(
     'tirage.created', 'tirage', label.trim(),
-    { data: { type, scheduled_at: scheduledAt, tickets_actifs: ticketsActifs } },
+    { data: { type, scheduled_at: scheduledAt, tickets_actifs: ticketsActifs, max_wins_per_member: maxWinsPerMember } },
     session.id
   )
 

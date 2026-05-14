@@ -38,7 +38,7 @@ interface Commande {
 }
 
 interface Props {
-  session: { id: string; type: string; label?: string | null; status: string; eligibilite_override: boolean; tickets_actifs: boolean }
+  session: { id: string; type: string; label?: string | null; status: string; eligibilite_override: boolean; tickets_actifs: boolean; max_wins_per_member: number }
   sessionId: string
   initialSessionLots: SessionLot[]
   initialWins: Win[]
@@ -429,8 +429,9 @@ export default function TirageDetail({
     }))
   )[0]
 
-  // Compat backward : soiree = tirage équitable (pas de pondération)
-  const isSoiree = session.type === 'soiree_16mai'
+  // max_wins_per_member: 0 = exclu après 1 gain, 1 = peut gagner 2 fois, etc.
+  const maxWinsPerMember = session.max_wins_per_member ?? 0
+  const isSoiree = session.type === 'soiree_16mai' // compat backward
 
   // Lots disponibles (pas encore dans la session)
   const sessionLotIds = new Set(sessionLots.map(sl => sl.lot_id))
@@ -471,13 +472,8 @@ export default function TirageDetail({
       })
     }
 
-    // 2. Limite de gains : soirée max 2, autres max 1
-    if (isSoiree) {
-      base = base.filter(m => wins.filter(w => w.memberId === m.id).length < 2)
-    } else {
-      const winnerIds = new Set(wins.map(w => w.memberId))
-      base = base.filter(m => !winnerIds.has(m.id))
-    }
+    // 2. Limite de gains selon max_wins_per_member
+    base = base.filter(m => wins.filter(w => w.memberId === m.id).length <= maxWinsPerMember)
 
     // 3. Tickets : pondéré par niveau ou 1 chance flat
     if (ticketsActifs) {
@@ -523,7 +519,7 @@ export default function TirageDetail({
     if (a) { a.pause(); a.currentTime = 0 }
   }
   function playDrumroll() { snd('drumroll-1') }
-  function playVictory()  { snd('victory-big') }
+  function playVictory()  { snd('victory-chime') }
   function stopAllSounds() { Object.keys(soundRefs.current).forEach(k => stopSnd(k)) }
   function toggleMute() { if (soundEnabled) stopAllSounds(); setSoundEnabled(v => !v) }
 
@@ -931,17 +927,17 @@ export default function TirageDetail({
             <button onClick={() => setShowValue(v => !v)} title={showValue ? 'Masquer les valeurs' : 'Afficher les valeurs'} style={{ background: showValue ? 'rgba(217,119,6,0.2)' : 'rgba(255,255,255,0.07)', border: `1px solid ${showValue ? 'rgba(217,119,6,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: showValue ? 'var(--accent)' : 'rgba(255,255,255,0.3)', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-display)' }}>
               {showValue ? '123' : '—'}
             </button>
-            <button onClick={toggleMute} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', display: 'flex' }}>
+            <button onClick={toggleMute} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', width: 32, height: 32, cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
             </button>
-            <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
+            <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', width: 32, height: 32, cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Minimize2 size={14} />
             </button>
           </div>
         </div>
 
         {/* Zone principale */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: '2rem' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowY: 'auto', padding: '2.5rem 2rem', minHeight: 0 }}>
 
           {/* READY */}
           {phase === 'ready' && countdown === 0 && (() => {
@@ -1081,7 +1077,7 @@ export default function TirageDetail({
           <h1 className="page-title">{displayName}</h1>
           <p className="page-subtitle">
             {sessionLots.length} lot{sessionLots.length > 1 ? 's' : ''} · {eligibleCount} membres éligibles
-            {!isSoiree && ` · ${ticketCount} tickets`}
+{ticketsActifs ? ` · ${ticketCount} tickets` : ''}{maxWinsPerMember > 0 ? ` · gain max ${maxWinsPerMember + 1}×` : ''}
           </p>
         </div>
         {phase !== 'completed' && (

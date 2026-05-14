@@ -98,7 +98,8 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
   const [label,       setLabel]       = useState('')
   const [scheduledAt, setScheduledAt] = useState(todayDatetimeLocal())
   const [forceCreate, setForceCreate] = useState(false)
-  const [ticketsActifs, setTicketsActifs] = useState(true)
+  const [ticketsActifs,    setTicketsActifs]    = useState(true)
+  const [maxWins,          setMaxWins]          = useState(0)
   const [creating,      startCreate]    = useTransition()
   const [deletingId,  setDeletingId]  = useState<string | null>(null)
   const [error,       setError]       = useState<string | null>(null)
@@ -119,7 +120,7 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
     setError(null)
     if (!label.trim()) { setError('Le nom du tirage est requis.'); return }
     startCreate(async () => {
-      const result = await createTirageSession(type, label, scheduledAt || null, ticketsActifs)
+      const result = await createTirageSession(type, label, scheduledAt || null, ticketsActifs, maxWins)
       if (result?.error) setError(result.error)
     })
   }
@@ -314,6 +315,40 @@ export default function TiragesList({ initialSessions }: { initialSessions: Sess
                   {ticketsActifs
                     ? 'Membre×1, Argent×2, Or×3, VIP×5 — plus de chances selon le niveau.'
                     : '1 chance par membre, quel que soit le niveau.'}
+                </p>
+              </div>
+
+              {/* Re-éligibilité des gagnants */}
+              <div>
+                <label className="label">
+                  Re-éligibilité des gagnants
+                  <span style={{ fontWeight: 400, color: 'var(--text-4)', marginLeft: '0.375rem' }}>
+                    (fois qu'un gagnant peut regagner)
+                  </span>
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {[0, 1, 2, 3].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setMaxWins(n)}
+                      style={{
+                        padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                        border: `1.5px solid ${maxWins === n ? 'var(--brand)' : 'var(--border)'}`,
+                        background: maxWins === n ? 'rgba(15,45,53,0.08)' : 'transparent',
+                        color: maxWins === n ? 'var(--brand)' : 'var(--text-3)',
+                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', transition: 'all 150ms ease',
+                      }}
+                    >
+                      {n === 0 ? '0 — exclu' : `${n}×`}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-4)', marginTop: '0.375rem', lineHeight: 1.5 }}>
+                  {maxWins === 0
+                    ? 'Un gagnant ne peut plus être tiré lors des lots suivants.'
+                    : `Un gagnant peut gagner jusqu'à ${maxWins + 1} lot${maxWins > 0 ? 's' : ''} au total.`}
                 </p>
               </div>
 

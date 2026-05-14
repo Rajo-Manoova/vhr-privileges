@@ -80,8 +80,9 @@ export default async function TirageDetailPage({
           type:                 session.type,
           label:                session.label,
           status:               session.status,
-          eligibilite_override: session.eligibilite_override ?? false,
-          tickets_actifs:       session.tickets_actifs ?? true,
+          eligibilite_override:    session.eligibilite_override ?? false,
+          tickets_actifs:          session.tickets_actifs ?? true,
+          max_wins_per_member:     session.max_wins_per_member ?? 0,
         }}
         sessionId={id}
         initialSessionLots={(sessionLots ?? []).map(sl => ({
