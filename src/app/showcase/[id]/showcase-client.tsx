@@ -248,7 +248,7 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
 
           {/* Slide 3 — Lots */}
           {slide===3 && (
-            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)', ...(isMobile ? {} : { minHeight:0, flex:'1 1 0', overflow:'hidden' }) }}>
+            <div style={{ width:'100%', maxWidth:1100, display:'flex', flexDirection:'column', gap:'clamp(0.5rem,1.5vh,0.875rem)' }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', flexWrap:'wrap', flexShrink:0, animation:'fadeUp 0.4s ease both' }}>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'clamp(1rem,2.5vw,1.75rem)', color:'white', letterSpacing:'-0.03em' }}>{lots.length} lots</span>
                 <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'clamp(0.875rem,1.8vw,1.25rem)', color:'#D97706' }}>{fmt(totalValue)} Ar de valeur totale</span>
@@ -257,11 +257,10 @@ export default function ShowcaseClient({ sessionId, sessionLabel, scheduledAt, l
                 display:'grid',
                 gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : `repeat(${Math.min(lots.length,5)},1fr)`,
                 gap:'clamp(0.3rem,0.6vw,0.5rem)',
-                ...(isMobile ? {} : { gridAutoRows:'1fr', flex:'1 1 0', minHeight:0, overflow:'hidden' }),
               }}>
                 {lots.slice(0,10).map((l,i)=>(
-                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', animation:`cardIn 0.35s ${i*0.05}s ease both` }}>
-                    <div style={{ height: isMobile ? '130px' : undefined, flex: isMobile ? 'none' : '1 1 0', background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div key={l.id} style={{ borderRadius:'0.625rem', overflow:'hidden', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', animation:`cardIn 0.35s ${i*0.05}s ease both` }}>
+                    <div style={{ height: isMobile ? '130px' : 'clamp(100px,14vh,170px)', background:'white', borderRadius:'0.5rem 0.5rem 0 0', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {l.photo_url ? (
                         <img src={l.photo_url} alt={l.nom} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }}
                           onError={e=>{ const t=e.currentTarget as HTMLImageElement; t.style.display='none'; (t.nextElementSibling as HTMLElement).style.display='flex' }} />
