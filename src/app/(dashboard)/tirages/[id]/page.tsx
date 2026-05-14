@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TirageDetail from '@/components/TirageDetail'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Presentation } from 'lucide-react'
 
 export default async function TirageDetailPage({
   params,
@@ -59,7 +59,7 @@ export default async function TirageDetailPage({
 
   return (
     <div>
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link
           href="/tirages"
           style={{
@@ -71,6 +71,21 @@ export default async function TirageDetailPage({
         >
           <ChevronLeft size={15} />
           Tous les tirages
+        </Link>
+        <Link
+          href={`/showcase/${id}`}
+          target="_blank"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.5rem 1rem', borderRadius: '0.625rem',
+            background: 'var(--bg-2)', border: '1.5px solid var(--border)',
+            color: 'var(--text-2)', textDecoration: 'none',
+            fontSize: '0.875rem', fontWeight: 600,
+            transition: 'all 150ms ease',
+          }}
+        >
+          <Presentation size={15} />
+          Showcase
         </Link>
       </div>
 
