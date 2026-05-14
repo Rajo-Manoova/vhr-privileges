@@ -413,6 +413,7 @@ export default function TirageDetail({
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [showConfetti,       setShowConfetti]       = useState(false)
   const [showConfirmButtons, setShowConfirmButtons] = useState(false)
+  const [showValue,          setShowValue]          = useState(true)
   const [projectorView, setProjectorView] = useState<'tableau'|'animation'>('tableau')
   const [tableauPage,   setTableauPage]   = useState(1)
   const [skippedIds,    setSkippedIds]    = useState<Set<string>>(new Set())
@@ -521,9 +522,10 @@ export default function TirageDetail({
     const a = soundRefs.current[key]
     if (a) { a.pause(); a.currentTime = 0 }
   }
-  function playDrumroll() { snd(`drumroll-${Math.floor(Math.random() * 3) + 1}`) }
-  function playVictory()  { snd(Math.random() < 0.6 ? 'victory-big' : 'victory-chime') }
+  function playDrumroll() { snd('drumroll-1') }
+  function playVictory()  { snd('victory-big') }
   function stopAllSounds() { Object.keys(soundRefs.current).forEach(k => stopSnd(k)) }
+  function toggleMute() { if (soundEnabled) stopAllSounds(); setSoundEnabled(v => !v) }
 
   function startDraw() {
     if (countdown > 0) return
@@ -745,7 +747,7 @@ export default function TirageDetail({
 
   /* ── Mode Projecteur ── */
   if (projector) {
-    const TABLEAU_PER_PAGE = 10
+    const TABLEAU_PER_PAGE = 5
     const sortedLots  = [...sessionLots].sort((a, b) => a.ordre - b.ordre)
     const wonIds      = new Set(wins.map(w => w.sessionLotId))
     const nextLotId   = sortedLots.find(sl => !wonIds.has(sl.id) && !skippedIds.has(sl.id))?.id
@@ -769,12 +771,12 @@ export default function TirageDetail({
           <style>{CSS}</style>
 
           {/* Header */}
-          <div style={{ padding: '1rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '1.5rem', flexShrink: 0 }}>
+          <div style={{ padding: '1.25rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.3)', marginBottom: '0.25rem' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 3.5vw, 3rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: '0.375rem' }}>
                 {displayName}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ fontSize: '0.9375rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ color: '#4ade80', fontWeight: 700 }}>{wins.length} attribué{wins.length > 1 ? 's' : ''}</span>
                 {skippedIds.size > 0 && <span style={{ color: 'rgba(255,255,255,0.25)' }}>{skippedIds.size} passé{skippedIds.size > 1 ? 's' : ''}</span>}
                 <span>·</span>
@@ -790,7 +792,10 @@ export default function TirageDetail({
                 return <div key={sl.id} style={{ width: 10, height: 10, borderRadius: '50%', background: won ? '#22c55e' : skip ? 'rgba(255,255,255,0.12)' : next ? 'var(--accent)' : 'rgba(255,255,255,0.18)', transition: 'all 300ms ease' }} />
               })}
             </div>
-            <button onClick={() => setSoundEnabled(v => !v)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', display: 'flex' }}>
+            <button onClick={() => setShowValue(v => !v)} title={showValue ? 'Masquer les valeurs' : 'Afficher les valeurs'} style={{ background: showValue ? 'rgba(217,119,6,0.2)' : 'rgba(255,255,255,0.07)', border: `1px solid ${showValue ? 'rgba(217,119,6,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.4rem 0.625rem', cursor: 'pointer', color: showValue ? 'var(--accent)' : 'rgba(255,255,255,0.3)', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              {showValue ? '123' : '—'}
+            </button>
+            <button onClick={toggleMute} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', display: 'flex' }}>
               {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
             </button>
             <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
@@ -842,38 +847,38 @@ export default function TirageDetail({
                     </div>
 
                     {/* Valeur */}
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' as const }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: showValue ? 'var(--accent)' : 'transparent', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' as const, transition: 'color 200ms ease' }}>
                       {sl.lot?.valeur_ar ? `${sl.lot.valeur_ar.toLocaleString('fr-FR')} Ar` : ''}
                     </div>
 
                     {/* Action */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.625rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0.625rem' }}>
                       {win ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <CheckCircle2 size={13} color="white" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <CheckCircle2 size={14} color="white" />
                           </div>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(0.875rem, 1.8vw, 1.25rem)', color: '#4ade80', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.5rem)', color: '#4ade80', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                             {win.memberName}
                           </span>
                         </div>
                       ) : skip ? (
-                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
+                        <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Passé</span>
                       ) : (
-                        <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%' }}>
                           <button
                             onClick={() => handleDrawFromTableau(sessionLots.findIndex(s => s.id === sl.id))}
-                            style={{ padding: '0.5rem 1.25rem', borderRadius: '0.625rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' as const, boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none' }}
+                            style={{ padding: '0.625rem 0', borderRadius: '0.625rem', background: isNext ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: isNext ? 'none' : '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', boxShadow: isNext ? '0 4px 16px rgba(217,119,6,0.3)' : 'none' }}
                           >
-                            <Play size={13} /> Tirer
+                            <Play size={14} /> Tirer
                           </button>
                           <button
                             onClick={() => skipFromTableau(sl.id)}
-                            style={{ padding: '0.5rem 0.75rem', borderRadius: '0.625rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' as const }}
+                            style={{ padding: '0.625rem 0', borderRadius: '0.625rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
                             Passer
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -909,7 +914,7 @@ export default function TirageDetail({
           </button>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.5625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.25)' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.25rem, 2.5vw, 2rem)', color: 'white', letterSpacing: '-0.025em', lineHeight: 1 }}>
               {displayName}
             </div>
             <div style={{ display: 'flex', gap: '3px', marginTop: '0.25rem', justifyContent: 'center' }}>
@@ -923,7 +928,10 @@ export default function TirageDetail({
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => setSoundEnabled(v => !v)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', display: 'flex' }}>
+            <button onClick={() => setShowValue(v => !v)} title={showValue ? 'Masquer les valeurs' : 'Afficher les valeurs'} style={{ background: showValue ? 'rgba(217,119,6,0.2)' : 'rgba(255,255,255,0.07)', border: `1px solid ${showValue ? 'rgba(217,119,6,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: showValue ? 'var(--accent)' : 'rgba(255,255,255,0.3)', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'var(--font-display)' }}>
+              {showValue ? '123' : '—'}
+            </button>
+            <button onClick={toggleMute} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: soundEnabled ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)', display: 'flex' }}>
               {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
             </button>
             <button onClick={toggleProjector} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', padding: '0.4rem 0.6rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
@@ -937,27 +945,38 @@ export default function TirageDetail({
 
           {/* READY */}
           {phase === 'ready' && countdown === 0 && (() => {
-            const cc = currentLot?.lot?.categorie ? CATEGORIE_COLORS[currentLot.lot.categorie] ?? null : null
             return (
-              <div style={{ textAlign: 'center', maxWidth: 520 }}>
+              <div style={{ textAlign: 'center', maxWidth: 560, width: '100%' }}>
+                {/* Image hero */}
                 {currentLot?.lot?.photo_url ? (
-                  <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: 200, height: 200, objectFit: 'cover', borderRadius: '1.25rem', display: 'block', margin: '0 auto 1.5rem', animation: 'photoIn 0.5s ease both' }} />
+                  <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: 'min(320px, 40vw)', height: 'min(320px, 40vw)', objectFit: 'cover', borderRadius: '1.5rem', display: 'block', margin: '0 auto 1.75rem', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
                 ) : (
-                  <div style={{ width: 200, height: 200, borderRadius: '1.25rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                    <Trophy size={56} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                  <div style={{ width: 'min(320px, 40vw)', height: 'min(320px, 40vw)', borderRadius: '1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.75rem' }}>
+                    <Trophy size={80} style={{ color: 'rgba(255,255,255,0.1)' }} />
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.875rem' }}>
-                  {cc && currentLot?.lot?.categorie && <span style={{ padding: '0.2rem 0.625rem', borderRadius: 9999, fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}>{CATEGORIE_LABELS[currentLot.lot.categorie]}</span>}
-                  {currentLot?.lot?.valeur_ar && <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>{currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar</span>}
+                {/* Catégorie + Valeur en colonne */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                  {currentLot?.lot?.categorie && (
+                    <span style={{ padding: '0.25rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
+                      {CATEGORIE_LABELS[currentLot.lot.categorie]}
+                    </span>
+                  )}
+                  {currentLot?.lot?.valeur_ar && (
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', color: showValue ? 'var(--accent)' : 'transparent', letterSpacing: '-0.02em', transition: 'color 250ms ease', userSelect: 'none' }}>
+                      {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '2rem' }}>
+                {/* Nom du lot */}
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.75rem, 4vw, 3.25rem)', color: 'white', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '2.25rem' }}>
                   {currentLot?.lot?.nom}
                 </div>
-                <button onClick={startDraw} style={{ padding: '1.125rem 2.75rem', borderRadius: '1rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1.1rem, 2.5vw, 1.625rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 40px rgba(217,119,6,0.35)' }}>
-                  <Play size={22} /> Tirer au sort
+                {/* Bouton */}
+                <button onClick={startDraw} style={{ padding: '0.875rem 2.25rem', borderRadius: '0.875rem', background: 'var(--accent)', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.375rem)', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.625rem', boxShadow: '0 6px 28px rgba(217,119,6,0.4)' }}>
+                  <Play size={18} /> Tirer au sort
                 </button>
-                <div style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.2)', fontSize: '0.8125rem' }}>
+                <div style={{ marginTop: '0.875rem', color: 'rgba(255,255,255,0.18)', fontSize: '0.8125rem' }}>
                   {eligibleCount} membres · {ticketCount} ticket{ticketCount > 1 ? 's' : ''}
                 </div>
               </div>
@@ -988,8 +1007,15 @@ export default function TirageDetail({
                 <div style={{ position: 'absolute', inset: -200, backgroundImage: `url(${currentLot.lot.photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06, filter: 'blur(40px)', zIndex: -1 }} />
               )}
               {currentLot?.lot?.nom && (
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: '1.5rem' }}>
-                  🏆 {currentLot.lot.nom}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: '0.25rem' }}>
+                    🏆 {currentLot.lot.nom}
+                  </div>
+                  {currentLot.lot?.valeur_ar && showValue && (
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(1.25rem, 2.5vw, 2rem)', color: 'var(--accent)', letterSpacing: '-0.02em', opacity: 0.85 }}>
+                      {currentLot.lot.valeur_ar.toLocaleString('fr-FR')} Ar
+                    </div>
+                  )}
                 </div>
               )}
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 0.9 }}>
