@@ -147,3 +147,26 @@ export async function updateTirageMaxWins(sessionId: string, maxWins: number) {
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
 }
+
+export async function updateTirageSession(
+  sessionId: string,
+  label: string,
+  scheduledAt: string | null,
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+  if (!label?.trim()) return { error: 'Le nom du tirage est requis.' }
+
+  const { error } = await supabase
+    .from('tirage_sessions')
+    .update({
+      label:        label.trim(),
+      scheduled_at: scheduledAt || null,
+    })
+    .eq('id', sessionId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/tirages')
+  return { success: true }
+}
