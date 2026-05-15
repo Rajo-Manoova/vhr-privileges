@@ -48,6 +48,20 @@ export default async function DashboardPage() {
     semestriel:   'Tirage semestriel',
   }
 
+  // Inscriptions par animateur/admin (depuis audit_logs)
+  const { data: inscriptionsRaw } = await supabase
+    .from('audit_logs')
+    .select('user_email')
+    .eq('action', 'member.created')
+
+  const inscriptionsByUser: Record<string, number> = {}
+  inscriptionsRaw?.forEach(log => {
+    const email = log.user_email ?? 'inconnu'
+    inscriptionsByUser[email] = (inscriptionsByUser[email] ?? 0) + 1
+  })
+  const inscriptionsByUserSorted = Object.entries(inscriptionsByUser)
+    .sort(([, a], [, b]) => b - a)
+
   function formatCountdown(dateStr: string): string {
     const d = new Date(dateStr)
     const now = new Date()
@@ -347,6 +361,48 @@ export default async function DashboardPage() {
           </Link> */}
         </div>
       </div>
+
+      {/* ── Inscriptions par animateur ── */}
+      {inscriptionsByUserSorted.length > 0 && (
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-1)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Users size={16} style={{ color: 'var(--brand-light)' }} />
+            Inscriptions par animateur
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {inscriptionsByUserSorted.map(([email, count], i) => (
+              <div key={email} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {/* Barre de progression */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                      {email}
+                    </span>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--brand)', marginLeft: '0.75rem', flexShrink: 0 }}>
+                      {count}
+                    </span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 9999, background: 'var(--bg-2)', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      borderRadius: 9999,
+                      background: i === 0 ? 'var(--brand)' : i === 1 ? 'var(--brand-light)' : 'var(--border-strong)',
+                      width: `${Math.round((count / inscriptionsByUserSorted[0][1]) * 100)}%`,
+                      transition: 'width 400ms ease',
+                    }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '0.875rem', paddingTop: '0.875rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-4)' }}>Total inscriptions</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-1)' }}>
+              {inscriptionsByUserSorted.reduce((s, [, n]) => s + n, 0)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
