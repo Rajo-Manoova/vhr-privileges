@@ -12,7 +12,7 @@ export default function InscriptionPage() {
   const [nom,      setNom]      = useState('')
   const [email,    setEmail]    = useState('')
   const [whatsapp, setWhatsapp] = useState('')
-  const [etape,    setEtape]    = useState<Etape>('15_akoor_depart')
+  const [etape,    setEtape]    = useState<Etape>('akoor_depart')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
   const [success,  setSuccess]  = useState(false)
@@ -71,7 +71,7 @@ export default function InscriptionPage() {
 
   function handleNew() {
     setPrenom(''); setNom(''); setEmail('')
-    setWhatsapp(''); setEtape('15_akoor_depart')
+    setWhatsapp(''); setEtape('akoor_depart')
     setError(null); setSuccess(false)
   }
 
@@ -144,7 +144,7 @@ export default function InscriptionPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">Inscription</h1>
-        <p className="page-subtitle">Enregistrez un participant au Programme VHR Privilèges.</p>
+        <p className="page-subtitle">Enregistrez un participant au Rallye VHR 2026.</p>
       </div>
 
       <div style={{ maxWidth: 520 }}>

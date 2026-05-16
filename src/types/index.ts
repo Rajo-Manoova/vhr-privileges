@@ -1,5 +1,5 @@
 export type Role           = 'admin' | 'animateur' | 'membre'
-export type Etape          = '15_akoor_depart' | '15_faratsiho' | '16_ampefy' | '17_sakay' | '17_akoor_arrivee'
+export type Etape          = 'akoor_depart' | 'faratsiho' | 'ampefy' | 'sakay' | 'akoor_arrivee'
 export type Palier         = 'membre' | 'argent' | 'or' | 'vip'
 export type LotCategorie   = 'decouverte' | 'premium' | 'prestige' | 'grand_prix'
 export type LotPalier      = 'tirage' | 'argent' | 'or' | 'vip'
@@ -9,11 +9,11 @@ export type LotStatus      = 'pending' | 'active' | 'confirmed' | 'redrawn'
 export type CommandeStatut = 'active' | 'annulee' | 'remboursee'
 
 export const ETAPE_LABELS: Record<Etape, string> = {
-  '15_akoor_depart':  'Akoor — Départ (15 Mai)',
-  '15_faratsiho':     'Faratsiho (15 Mai)',
-  '16_ampefy':        'Ampefy (16 Mai)',
-  '17_sakay':         'Sakay (17 Mai)',
-  '17_akoor_arrivee': 'Akoor — Arrivée (17 Mai)',
+  'akoor_depart':  'Akoor — Départ',
+  'faratsiho':     'Faratsiho',
+  'ampefy':        'Ampefy',
+  'sakay':         'Sakay',
+  'akoor_arrivee': 'Akoor — Arrivée',
 }
 
 // ─── Paliers ────────────────────────────────────────────────────────────────
@@ -112,8 +112,8 @@ export interface Member {
   email: string
   whatsapp: string
   etape: Etape
-  niveau: Palier          // ← nouveau
-  cumul_ar: number        // ← nouveau (0 par défaut, mis à jour par Odoo)
+  niveau: Palier
+  cumul_ar: number
   actif: boolean
   notes?: string | null
   pin?: string | null
@@ -147,7 +147,7 @@ export interface TirageSession {
   completed_at?: string | null
   created_by?: string | null
   created_at: string
-  eligibilite_override: boolean   // ← nouveau
+  eligibilite_override: boolean
 }
 
 export interface TirageTypeConfig {
