@@ -926,7 +926,7 @@ export default function TirageDetail({
 
                     {/* Miniature */}
                     {sl.lot?.photo_url ? (
-                      <img src={sl.lot.photo_url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '0.5rem', opacity: win || skip ? 0.3 : 1, flexShrink: 0 }} />
+                      <img src={sl.lot.photo_url} alt="" style={{ width: 44, height: 44, objectFit: 'contain', background: 'white', borderRadius: '0.5rem', opacity: win || skip ? 0.3 : 1, flexShrink: 0 }} />
                     ) : (
                       <div style={{ width: 44, height: 44, borderRadius: '0.5rem', background: win ? 'rgba(34,197,94,0.1)' : isNext ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: win ? '#4ade80' : isNext ? 'var(--accent)' : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
                         {win ? '✓' : `#${sl.ordre}`}
@@ -1088,7 +1088,7 @@ export default function TirageDetail({
                 {/* Image hero — gauche */}
                 <div style={{ flexShrink: 0 }}>
                   {currentLot?.lot?.photo_url ? (
-                    <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: imgSize, height: imgSize, objectFit: 'cover', borderRadius: '1.5rem', display: 'block', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
+                    <img src={currentLot.lot.photo_url} alt={currentLot.lot?.nom} style={{ width: imgSize, height: imgSize, objectFit: 'contain', background: 'white', borderRadius: '1.5rem', display: 'block', animation: 'photoIn 0.5s ease both', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }} />
                   ) : (
                     <div style={{ width: imgSize, height: imgSize, borderRadius: '1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Trophy size={80} style={{ color: 'rgba(255,255,255,0.1)' }} />
