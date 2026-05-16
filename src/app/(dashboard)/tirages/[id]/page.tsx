@@ -44,12 +44,33 @@ export default async function TirageDetailPage({
     .select('id, member_id, statut')
     .eq('statut', 'active')
 
-  const { data: catalogueLots } = await supabase
+  // Lots disponibles — en tenant compte du stock réservé dans TOUS les tirages
+  const { data: allCatalogueLots } = await supabase
     .from('lots')
     .select('*')
     .eq('disponible', true)
     .gt('stock', 0)
     .order('categorie')
+
+  // Compter combien de fois chaque lot est utilisé dans d'autres sessions
+  const { data: allSessionLots } = await supabase
+    .from('session_lots')
+    .select('lot_id')
+
+  // Pour chaque lot, compter le nombre de fois qu'il est alloué (toutes sessions)
+  const usageCount: Record<string, number> = {}
+  for (const sl of allSessionLots ?? []) {
+    usageCount[sl.lot_id] = (usageCount[sl.lot_id] ?? 0) + 1
+  }
+
+  // Un lot est disponible si stock > nombre d'allocations totales
+  // OU s'il est déjà dans cette session (on ne le propose pas en doublon)
+  const currentSessionLotIds = new Set((sessionLots ?? []).map(sl => sl.lot_id))
+  const catalogueLots = (allCatalogueLots ?? []).filter(lot => {
+    if (currentSessionLotIds.has(lot.id)) return false // déjà dans cette session
+    const used = usageCount[lot.id] ?? 0
+    return lot.stock > used // stock restant disponible
+  })
 
   const { data: typeConfig } = await supabase
     .from('tirage_type_configs')
@@ -116,7 +137,7 @@ export default async function TirageDetailPage({
         }))}
         members={members ?? []}
         commandes={commandes ?? []}
-        catalogueLots={(catalogueLots ?? []) as any[]}
+        catalogueLots={catalogueLots as any[]}
         typeConfig={typeConfig ?? null}
       />
     </div>
