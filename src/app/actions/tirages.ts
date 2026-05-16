@@ -115,6 +115,21 @@ export async function removeSessionLot(sessionLotId: string, sessionId: string) 
     .delete()
     .eq('id', sessionLotId)
   if (error) return { error: error.message }
+
+  // Reséquencer les lots restants
+  const { data: remaining } = await supabase
+    .from('session_lots')
+    .select('id')
+    .eq('session_id', sessionId)
+    .order('ordre', { ascending: true })
+  if (remaining && remaining.length > 0) {
+    await Promise.all(
+      remaining.map((sl, i) =>
+        supabase.from('session_lots').update({ ordre: i + 1 }).eq('id', sl.id)
+      )
+    )
+  }
+
   await logAction('tirage.lot_removed', 'tirage', sessionId, { data: { session_lot_id: sessionLotId } }, sessionId)
   revalidatePath(`/tirages/${sessionId}`)
   return { success: true }
