@@ -1161,7 +1161,7 @@ export default function TirageDetail({
                   )}
                 </div>
               )}
-              <div className="proj-win-name" style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 'clamp(2rem,10vw,3.5rem)' : 'clamp(4rem, 14vw, 10rem)', fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div className="proj-win-name" style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? `clamp(1.5rem,${Math.min(10, 50 / Math.max(winner.prenom.length, 1))}vw,3.5rem)` : `clamp(2rem,${Math.min(14, 80 / Math.max(winner.prenom.length, 1))}vw,10rem)`, fontWeight: 900, letterSpacing: '-0.05em', color: 'white', lineHeight: 1, whiteSpace: 'nowrap' }}>
                 {winner.prenom}
               </div>
               {winner.nom && <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.45)', marginBottom: '2rem' }}>{winner.nom}</div>}
