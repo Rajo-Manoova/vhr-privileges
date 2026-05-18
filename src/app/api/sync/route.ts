@@ -40,7 +40,7 @@ export async function POST() {
       user:     process.env.ODOO_PG_USER,
       password: process.env.ODOO_PG_PASSWORD,
       connectionTimeoutMillis: 10000,
-      ssl: false,
+      ssl: { rejectUnauthorized: false },
     })
 
     await odoo.connect()
@@ -154,7 +154,7 @@ export async function GET() {
       user:     process.env.ODOO_PG_USER,
       password: process.env.ODOO_PG_PASSWORD,
       connectionTimeoutMillis: 5000,
-      ssl: false,
+      ssl: { rejectUnauthorized: false },
     })
 
     await odoo.connect()
