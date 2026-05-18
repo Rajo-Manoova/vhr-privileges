@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, UserPlus, Users, Shuffle,
   LogOut, Menu, X, Trophy, UserCog,
-  ShoppingCart, Calendar, BookOpen, Award, Shield, Settings,
+  ShoppingCart, Calendar, BookOpen, Award, Shield, Settings, Database,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/types'
@@ -30,6 +30,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/settings',    icon: Settings,         label: 'Paramètres'      },
     { href: '/equipe',      icon: UserCog,          label: 'Équipe'          },
     { href: '/audit',       icon: Shield,           label: 'Audit'           },
+    { href: '/donnees',     icon: Database,         label: 'Données'         },
   ],
   animateur: [
     { href: '/inscription', icon: UserPlus, label: 'Inscription' },
